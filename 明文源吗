@@ -4166,7 +4166,7 @@
                         
                         return { success: true, latency: latency, colo: colo, testUrl: testUrl };
                     } catch (error) {
-                        const errorMsg = error.name === 'AbortError' ? '${isFarsi ? 'زمان تمام شد' : '超时'}' : error.message;
+                        const errorMsg = error.name === 'AbortError' ? (isFarsi ? 'زمان تمام شد' : '超时') : error.message;
                         console.log('[LatencyTest] Error:', errorMsg, 'URL:', testUrl);
                         return { success: false, latency: -1, error: errorMsg, colo: '', testUrl: testUrl };
                     }
