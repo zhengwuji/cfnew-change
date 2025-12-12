@@ -699,76 +699,29 @@
                                 console.error('获取自定义首页失败:', error);
                             }
                         }
-                        // 优先检查Cookie中的语言设置
-                        const cookieHeader = request.headers.get('Cookie') || '';
-                        let langFromCookie = null;
-                        if (cookieHeader) {
-                            const cookies = cookieHeader.split(';').map(c => c.trim());
-                            for (const cookie of cookies) {
-                                if (cookie.startsWith('preferredLanguage=')) {
-                                    langFromCookie = cookie.split('=')[1];
-                                    break;
-                                }
-                            }
-                        }
+                        // 固定使用中文
+                        const translations = {
+                            title: '终端',
+                            terminal: '终端',
+                            congratulations: '恭喜你来到这',
+                            enterU: '请输入你U变量的值',
+                            enterD: '请输入你D变量的值',
+                            command: '命令: connect [',
+                            uuid: 'UUID',
+                            path: 'PATH',
+                            inputU: '输入U变量的内容并且回车...',
+                            inputD: '输入D变量的内容并且回车...',
+                            connecting: '正在连接...',
+                            invading: '正在入侵...',
+                            success: '连接成功！返回结果...',
+                            error: '错误: 无效的UUID格式',
+                            reenter: '请重新输入有效的UUID'
+                        };
                         
-                        let isFarsi = false;
-                        
-                        if (langFromCookie === 'fa' || langFromCookie === 'fa-IR') {
-                            isFarsi = true;
-                        } else if (langFromCookie === 'zh' || langFromCookie === 'zh-CN') {
-                            isFarsi = false;
-                        } else {
-                            // 如果没有Cookie，使用浏览器语言检测
-                            const acceptLanguage = request.headers.get('Accept-Language') || '';
-                            const browserLang = acceptLanguage.split(',')[0].split('-')[0].toLowerCase();
-                            isFarsi = browserLang === 'fa' || acceptLanguage.includes('fa-IR') || acceptLanguage.includes('fa');
-                        }
-                            
-                            const lang = isFarsi ? 'fa' : 'zh-CN';
-                            const langAttr = isFarsi ? 'fa-IR' : 'zh-CN';
-                            
-                            const translations = {
-                                zh: {
-                                    title: '终端',
-                                    terminal: '终端',
-                                    congratulations: '恭喜你来到这',
-                                    enterU: '请输入你U变量的值',
-                                    enterD: '请输入你D变量的值',
-                                    command: '命令: connect [',
-                                    uuid: 'UUID',
-                                    path: 'PATH',
-                                    inputU: '输入U变量的内容并且回车...',
-                                    inputD: '输入D变量的内容并且回车...',
-                                    connecting: '正在连接...',
-                                    invading: '正在入侵...',
-                                    success: '连接成功！返回结果...',
-                                    error: '错误: 无效的UUID格式',
-                                    reenter: '请重新输入有效的UUID'
-                                },
-                                fa: {
-                                    title: 'ترمینال',
-                                    terminal: 'ترمینال',
-                                    congratulations: 'تبریک می‌گوییم به شما',
-                                    enterU: 'لطفا مقدار متغیر U خود را وارد کنید',
-                                    enterD: 'لطفا مقدار متغیر D خود را وارد کنید',
-                                    command: 'دستور: connect [',
-                                    uuid: 'UUID',
-                                    path: 'PATH',
-                                    inputU: 'محتویات متغیر U را وارد کرده و Enter را بزنید...',
-                                    inputD: 'محتویات متغیر D را وارد کرده و Enter را بزنید...',
-                                    connecting: 'در حال اتصال...',
-                                    invading: 'در حال نفوذ...',
-                                    success: 'اتصال موفق! در حال بازگشت نتیجه...',
-                                    error: 'خطا: فرمت UUID نامعتبر',
-                                    reenter: 'لطفا UUID معتبر را دوباره وارد کنید'
-                                }
-                            };
-                            
-                            const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                             
                         const terminalHtml = `<!DOCTYPE html>
-        <html lang="${langAttr}" dir="${isFarsi ? 'rtl' : 'ltr'}">
+        <html lang="zh-CN" dir="ltr">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -916,12 +869,6 @@
         <div class="matrix-rain"></div>
         <div class="matrix-code-rain" id="matrixCodeRain"></div>
             <div class="matrix-text">${t.terminal}</div>
-            <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-                <select id="languageSelector" style="background: rgba(0, 20, 0, 0.9); border: 2px solid #00ff00; color: #00ff00; padding: 8px 12px; font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer; text-shadow: 0 0 5px #00ff00; box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);" onchange="changeLanguage(this.value)">
-                    <option value="zh" ${!isFarsi ? 'selected' : ''}>🇨🇳 中文</option>
-                    <option value="fa" ${isFarsi ? 'selected' : ''}>🇮🇷 فارسی</option>
-                </select>
-            </div>
         <div class="terminal">
             <div class="terminal-header">
                 <div class="terminal-buttons">
@@ -1028,24 +975,13 @@
                     addTerminalLine(atob('Y29ubmVjdCA=') + inputValue, 'output');
                         
                         const translations = {
-                            zh: {
-                                connecting: '正在连接...',
-                                invading: '正在入侵...',
-                                success: '连接成功！返回结果...',
-                                error: '错误: 无效的UUID格式',
-                                reenter: '请重新输入有效的UUID'
-                            },
-                            fa: {
-                                connecting: 'در حال اتصال...',
-                                invading: 'در حال نفوذ...',
-                                success: 'اتصال موفق! در حال بازگشت نتیجه...',
-                                error: 'خطا: فرمت UUID نامعتبر',
-                                reenter: 'لطفا UUID معتبر را دوباره وارد کنید'
-                            }
+                            connecting: '正在连接...',
+                            invading: '正在入侵...',
+                            success: '连接成功！返回结果...',
+                            error: '错误: 无效的UUID格式',
+                            reenter: '请重新输入有效的UUID'
                         };
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                     
                     if (cp) {
                         const cleanInput = inputValue.startsWith('/') ? inputValue : '/' + inputValue;
@@ -1075,50 +1011,6 @@
                 }
             }
                 
-                function changeLanguage(lang) {
-                    localStorage.setItem('preferredLanguage', lang);
-                    // 设置Cookie（有效期1年）
-                    const expiryDate = new Date();
-                    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                    document.cookie = 'preferredLanguage=' + lang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                    // 刷新页面，不使用URL参数
-                    window.location.reload();
-                }
-                
-                // 页面加载时检查 localStorage 和 Cookie，并清理URL参数
-                window.addEventListener('DOMContentLoaded', function() {
-                    function getCookie(name) {
-                        const value = '; ' + document.cookie;
-                        const parts = value.split('; ' + name + '=');
-                        if (parts.length === 2) return parts.pop().split(';').shift();
-                        return null;
-                    }
-                    
-                    const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const urlLang = urlParams.get('lang');
-                    
-                    // 如果URL中有语言参数，移除它并设置Cookie
-                    if (urlLang) {
-                        const currentUrl = new URL(window.location.href);
-                        currentUrl.searchParams.delete('lang');
-                        const newUrl = currentUrl.toString();
-                        
-                        // 设置Cookie
-                        const expiryDate = new Date();
-                        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                        document.cookie = 'preferredLanguage=' + urlLang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                        localStorage.setItem('preferredLanguage', urlLang);
-                        
-                        // 使用history API移除URL参数，不刷新页面
-                        window.history.replaceState({}, '', newUrl);
-                    } else if (savedLang) {
-                        // 如果localStorage中有但Cookie中没有，同步到Cookie
-                        const expiryDate = new Date();
-                        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                        document.cookie = 'preferredLanguage=' + savedLang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                    }
-                });
             
             document.addEventListener('DOMContentLoaded', function() {
                 createMatrixRain();
@@ -1889,35 +1781,8 @@
         if (!user) user = at;
         
         const url = new URL(request.url);
-        // 优先检查Cookie中的语言设置
-        const cookieHeader = request.headers.get('Cookie') || '';
-        let langFromCookie = null;
-        if (cookieHeader) {
-            const cookies = cookieHeader.split(';').map(c => c.trim());
-            for (const cookie of cookies) {
-                if (cookie.startsWith('preferredLanguage=')) {
-                    langFromCookie = cookie.split('=')[1];
-                    break;
-                }
-            }
-        }
-        
-        let isFarsi = false;
-        
-        if (langFromCookie === 'fa' || langFromCookie === 'fa-IR') {
-            isFarsi = true;
-        } else if (langFromCookie === 'zh' || langFromCookie === 'zh-CN') {
-            isFarsi = false;
-        } else {
-            // 如果没有Cookie，使用浏览器语言检测
-            const acceptLanguage = request.headers.get('Accept-Language') || '';
-            const browserLang = acceptLanguage.split(',')[0].split('-')[0].toLowerCase();
-            isFarsi = browserLang === 'fa' || acceptLanguage.includes('fa-IR') || acceptLanguage.includes('fa');
-        }
-            
-            const langAttr = isFarsi ? 'fa-IR' : 'zh-CN';
-            
-            const translations = {
+        // 固定使用中文
+        const translations = {
                 zh: {
                     title: '订阅中心',
                     subtitle: '多客户端支持 • 智能优选 • 一键生成',
@@ -2048,144 +1913,12 @@
                 kvCheckFailed: 'KV存储检测失败: 响应格式错误',
                 kvCheckFailedStatus: 'KV存储检测失败 - 状态码: ',
                 kvCheckFailedError: 'KV存储检测失败 - 错误: '
-            },
-                fa: {
-                    title: 'مرکز اشتراک',
-                    subtitle: 'پشتیبانی چند کلاینت • انتخاب هوشمند • تولید یک کلیکی',
-                    selectClient: '[ انتخاب کلاینت ]',
-                    systemStatus: '[ وضعیت سیستم ]',
-                    configManagement: '[ مدیریت تنظیمات ]',
-                    relatedLinks: '[ لینک‌های مرتبط ]',
-                    checking: 'در حال بررسی...',
-                    workerRegion: 'منطقه Worker: ',
-                    detectionMethod: 'روش تشخیص: ',
-                    proxyIPStatus: 'وضعیت ProxyIP: ',
-                    currentIP: 'IP فعلی: ',
-                    regionMatch: 'تطبیق منطقه: ',
-                    selectionLogic: 'منطق انتخاب: ',
-                    kvStatusChecking: 'در حال بررسی وضعیت KV...',
-                    kvEnabled: '✅ ذخیره‌سازی KV فعال است، می‌توانید از مدیریت تنظیمات استفاده کنید',
-                    kvDisabled: '⚠️ ذخیره‌سازی KV فعال نیست یا پیکربندی نشده است',
-                    specifyRegion: 'تعیین منطقه (wk):',
-                    autoDetect: 'تشخیص خودکار',
-                    saveRegion: 'ذخیره تنظیمات منطقه',
-                    protocolSelection: 'انتخاب پروتکل:',
-                    enableVLESS: 'فعال‌سازی پروتکل VLESS',
-                    enableTrojan: 'فعال‌سازی پروتکل Trojan',
-                    enableXhttp: 'فعال‌سازی پروتکل xhttp',
-                    trojanPassword: 'رمز عبور Trojan (اختیاری):',
-                    customPath: 'مسیر سفارشی (d):',
-                    customIP: 'ProxyIP سفارشی (p):',
-                    preferredIPs: 'لیست IP ترجیحی (yx):',
-                    preferredIPsURL: 'URL منبع IP ترجیحی (yxURL):',
-                    latencyTest: 'تست تاخیر',
-                    latencyTestIP: 'IP/دامنه تست:',
-                    latencyTestIPPlaceholder: 'IP یا دامنه وارد کنید، چند مورد با کاما جدا شوند',
-                    latencyTestPort: 'پورت:',
-                    startTest: 'شروع تست',
-                    stopTest: 'توقف تست',
-                    testResult: 'نتیجه تست:',
-                    addToYx: 'افزودن به لیست ترجیحی',
-                    addSelectedToYx: 'افزودن موارد انتخاب شده',
-                    selectAll: 'انتخاب همه',
-                    deselectAll: 'لغو انتخاب',
-                    testingInProgress: 'در حال تست...',
-                    testComplete: 'تست کامل شد',
-                    latencyMs: 'تاخیر',
-                    timeout: 'زمان تمام شد',
-                    ipSource: 'منبع IP:',
-                    manualInput: 'ورودی دستی',
-                    cfRandomIP: 'IP تصادفی CF',
-                    urlFetch: 'دریافت از URL',
-                    randomCount: 'تعداد تولید:',
-                    fetchURL: 'URL دریافت:',
-                    fetchURLPlaceholder: 'آدرس URL لیست IP را وارد کنید',
-                    generateIP: 'تولید IP',
-                    fetchIP: 'دریافت IP',
-                    socks5Config: 'تنظیمات SOCKS5 (s):',
-                    customHomepage: 'URL صفحه اصلی سفارشی (homepage):',
-                    customHomepagePlaceholder: 'مثال: https://example.com',
-                    customHomepageHint: 'تنظیم URL سفارشی به عنوان استتار صفحه اصلی. هنگام دسترسی به مسیر اصلی / محتوای این URL نمایش داده می‌شود. اگر خالی بگذارید صفحه ترمینال پیش‌فرض نمایش داده می‌شود.',
-                    saveConfig: 'ذخیره تنظیمات',
-                    advancedControl: 'کنترل پیشرفته',
-                    subscriptionConverter: 'آدرس تبدیل اشتراک:',
-                    builtinPreferred: 'نوع ترجیحی داخلی:',
-                    enablePreferredDomain: 'فعال‌سازی دامنه ترجیحی',
-                    enablePreferredIP: 'فعال‌سازی IP ترجیحی',
-                    enableGitHubPreferred: 'فعال‌سازی ترجیح پیش‌فرض GitHub',
-                    allowAPIManagement: 'اجازه مدیریت API (ae):',
-                    regionMatching: 'تطبیق منطقه (rm):',
-                    downgradeControl: 'کنترل کاهش سطح (qj):',
-                    tlsControl: 'کنترل TLS (dkby):',
-                    preferredControl: 'کنترل ترجیحی (yxby):',
-                    saveAdvanced: 'ذخیره تنظیمات پیشرفته',
-                    loading: 'در حال بارگذاری...',
-                    currentConfig: '📍 پیکربندی مسیر فعلی',
-                    refreshConfig: 'تازه‌سازی تنظیمات',
-                    resetConfig: 'بازنشانی تنظیمات',
-                    subscriptionCopied: 'لینک اشتراک کپی شد',
-                    autoSubscriptionCopied: 'لینک اشتراک تشخیص خودکار کپی شد، کلاینت هنگام دسترسی بر اساس User-Agent به طور خودکار تشخیص داده و قالب مربوطه را برمی‌گرداند',
-                    trojanPasswordPlaceholder: 'خالی بگذارید تا از UUID استفاده شود',
-                    trojanPasswordHint: 'رمز عبور Trojan سفارشی را تنظیم کنید. اگر خالی بگذارید از UUID استفاده می‌شود. کلاینت به طور خودکار رمز عبور را با SHA224 هش می‌کند.',
-                    protocolHint: 'می‌توانید چندین پروتکل را همزمان فعال کنید. اشتراک گره‌های پروتکل‌های انتخاب شده را تولید می‌کند.<br>• VLESS WS: پروتکل استاندارد مبتنی بر WebSocket<br>• Trojan: احراز هویت با رمز عبور SHA224<br>• xhttp: پروتکل استتار مبتنی بر HTTP POST (نیاز به اتصال دامنه سفارشی و فعال‌سازی gRPC دارد)',
-                    saveProtocol: 'ذخیره تنظیمات پروتکل',
-                    subscriptionConverterPlaceholder: 'پیش‌فرض: https://url.v1.mk/sub',
-                    subscriptionConverterHint: 'آدرس API تبدیل اشتراک سفارشی، اگر خالی بگذارید از آدرس پیش‌فرض استفاده می‌شود',
-                    builtinPreferredHint: 'کنترل اینکه کدام گره‌های ترجیحی داخلی در اشتراک گنجانده شوند. به طور پیش‌فرض همه فعال هستند.',
-                    apiEnabledDefault: 'پیش‌فرض (بستن API)',
-                    apiEnabledYes: 'فعال‌سازی مدیریت API',
-                    apiEnabledHint: '⚠️ هشدار امنیتی: فعال‌سازی این گزینه اجازه می‌دهد IP های ترجیحی از طریق API به طور پویا اضافه شوند. توصیه می‌شود فقط در صورت نیاز فعال کنید.',
-                    regionMatchingDefault: 'پیش‌فرض (فعال‌سازی تطبیق منطقه)',
-                    regionMatchingNo: 'بستن تطبیق منطقه',
-                    regionMatchingHint: 'وقتی "بستن" تنظیم شود، تطبیق هوشمند منطقه انجام نمی‌شود',
-                    downgradeControlDefault: 'پیش‌فرض (عدم فعال‌سازی کاهش سطح)',
-                    downgradeControlNo: 'فعال‌سازی حالت کاهش سطح',
-                    downgradeControlHint: 'وقتی "فعال" تنظیم شود: اتصال مستقیم CF ناموفق → اتصال SOCKS5 → آدرس fallback',
-                    tlsControlDefault: 'پیش‌فرض (حفظ همه گره‌ها)',
-                    tlsControlYes: 'فقط گره‌های TLS',
-                    tlsControlHint: 'وقتی "فقط گره‌های TLS" تنظیم شود، فقط گره‌های با TLS تولید می‌شوند، گره‌های غیر TLS (مانند پورت 80) تولید نمی‌شوند',
-                    preferredControlDefault: 'پیش‌فرض (فعال‌سازی ترجیح)',
-                    preferredControlYes: 'بستن ترجیح',
-                    preferredControlHint: 'وقتی "بستن ترجیح" تنظیم شود، فقط از آدرس اصلی استفاده می‌شود، گره‌های IP و دامنه ترجیحی تولید نمی‌شوند',
-                    regionNames: {
-                        US: '🇺🇸 آمریکا', SG: '🇸🇬 سنگاپور', JP: '🇯🇵 ژاپن',
-                        KR: '🇰🇷 کره جنوبی', DE: '🇩🇪 آلمان', SE: '🇸🇪 سوئد', NL: '🇳🇱 هلند',
-                        FI: '🇫🇮 فنلاند', GB: '🇬🇧 بریتانیا'
-                    },
-                    terminal: 'ترمینال v2.7',
-                    githubProject: 'پروژه GitHub',
-                    autoDetectClient: 'تشخیص خودکار',
-                selectionLogicText: 'هم‌منطقه → منطقه مجاور → سایر مناطق',
-                customIPDisabledHint: 'هنگام استفاده از ProxyIP سفارشی، انتخاب منطقه غیرفعال است',
-                customIPMode: 'حالت ProxyIP سفارشی (متغیر p فعال است)',
-                customIPModeDesc: 'حالت IP سفارشی (تطبیق منطقه غیرفعال است)',
-                usingCustomProxyIP: 'استفاده از ProxyIP سفارشی: ',
-                customIPConfig: ' (پیکربندی متغیر p)',
-                customIPModeDisabled: 'حالت IP سفارشی، انتخاب منطقه غیرفعال است',
-                manualRegion: 'تعیین منطقه دستی',
-                manualRegionDesc: ' (تعیین دستی)',
-                proxyIPAvailable: '10/10 در دسترس (دامنه پیش‌فرض ProxyIP در دسترس است)',
-                smartSelection: 'انتخاب هوشمند نزدیک در حال انجام است',
-                sameRegionIP: 'IP هم‌منطقه در دسترس است (1)',
-                cloudflareDetection: 'تشخیص داخلی Cloudflare',
-                detectionFailed: 'تشخیص ناموفق',
-                apiTestResult: 'نتیجه تشخیص API: ',
-                apiTestTime: 'زمان تشخیص: ',
-                apiTestFailed: 'تشخیص API ناموفق: ',
-                unknownError: 'خطای ناشناخته',
-                apiTestError: 'تست API ناموفق: ',
-                kvNotConfigured: 'ذخیره‌سازی KV پیکربندی نشده است، نمی‌توانید از عملکرد مدیریت تنظیمات استفاده کنید.\\n\\nلطفا در Cloudflare Workers:\\n1. فضای نام KV ایجاد کنید\\n2. متغیر محیطی C را پیوند دهید\\n3. کد را دوباره مستقر کنید',
-                kvNotEnabled: 'ذخیره‌سازی KV پیکربندی نشده است',
-                kvCheckFailed: 'بررسی ذخیره‌سازی KV ناموفق: خطای فرمت پاسخ',
-                kvCheckFailedStatus: 'بررسی ذخیره‌سازی KV ناموفق - کد وضعیت: ',
-                kvCheckFailedError: 'بررسی ذخیره‌سازی KV ناموفق - خطا: '
-            }
-        };
+            };
             
-            const t = translations[isFarsi ? 'fa' : 'zh'];
+            const t = translations;
         
         const pageHtml = `<!DOCTYPE html>
-        <html lang="${langAttr}" dir="${isFarsi ? 'rtl' : 'ltr'}">
+        <html lang="zh-CN" dir="ltr">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2406,12 +2139,6 @@
         <div class="matrix-rain"></div>
         <div class="matrix-code-rain" id="matrixCodeRain"></div>
             <div class="matrix-text">${t.terminal}</div>
-            <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-                <select id="languageSelector" style="background: rgba(0, 20, 0, 0.9); border: 2px solid #00ff00; color: #00ff00; padding: 8px 12px; font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer; text-shadow: 0 0 5px #00ff00; box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);" onchange="changeLanguage(this.value)">
-                    <option value="zh" ${!isFarsi ? 'selected' : ''}>🇨🇳 中文</option>
-                    <option value="fa" ${isFarsi ? 'selected' : ''}>🇮🇷 فارسی</option>
-                </select>
-            </div>
         <div class="container">
             <div class="header">
                     <h1 class="title">${t.title}</h1>
@@ -2508,23 +2235,23 @@
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.customPath}</label>
-                                <input type="text" id="customPath" placeholder="${isFarsi ? 'مثال: /mypath یا خالی بگذارید تا از UUID استفاده شود' : '例如: /mypath 或留空使用 UUID'}" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                                <small style="color: #00aa00; font-size: 0.85rem;">${isFarsi ? 'مسیر اشتراک سفارشی. اگر خالی بگذارید از UUID به عنوان مسیر استفاده می‌شود.' : '自定义订阅路径。留空则使用 UUID 作为路径。'}</small>
+                                <input type="text" id="customPath" placeholder="例如: /mypath 或留空使用 UUID" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <small style="color: #00aa00; font-size: 0.85rem;">自定义订阅路径。留空则使用 UUID 作为路径。</small>
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.customIP}</label>
-                                <input type="text" id="customIP" placeholder="${isFarsi ? 'مثال: 1.2.3.4:443' : '例如: 1.2.3.4:443'}" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                                <small style="color: #00aa00; font-size: 0.85rem;">${isFarsi ? 'آدرس و پورت ProxyIP سفارشی' : '自定义ProxyIP地址和端口'}</small>
+                                <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <small style="color: #00aa00; font-size: 0.85rem;">自定义ProxyIP地址和端口</small>
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.preferredIPs}</label>
-                                <input type="text" id="yx" placeholder="${isFarsi ? 'مثال: 1.2.3.4:443#گره هنگ‌کنگ,5.6.7.8:80#گره آمریکا,example.com:8443#گره سنگاپور' : '例如: 1.2.3.4:443#日本节点,5.6.7.8:80#美国节点,example.com:8443#新加坡节点'}" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                                <small style="color: #00aa00; font-size: 0.85rem;">${isFarsi ? 'فرمت: IP:پورت#نام گره یا IP:پورت (بدون # از نام پیش‌فرض استفاده می‌شود). پشتیبانی از چندین مورد، با کاما جدا می‌شوند. <span style="color: #ffaa00;">IP های اضافه شده از طریق API به طور خودکار در اینجا نمایش داده می‌شوند.</span>' : '格式: IP:端口#节点名称 或 IP:端口 (无#则使用默认名称)。支持多个，用逗号分隔。<span style="color: #ffaa00;">API添加的IP会自动显示在这里。</span>'}</small>
+                                <input type="text" id="yx" placeholder="例如: 1.2.3.4:443#日本节点,5.6.7.8:80#美国节点,example.com:8443#新加坡节点" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <small style="color: #00aa00; font-size: 0.85rem;">格式: IP:端口#节点名称 或 IP:端口 (无#则使用默认名称)。支持多个，用逗号分隔。<span style="color: #ffaa00;">API添加的IP会自动显示在这里。</span></small>
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.preferredIPsURL}</label>
-                                <input type="text" id="yxURL" placeholder="${isFarsi ? 'پیش‌فرض: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt' : '默认: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt'}" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                                <small style="color: #00aa00; font-size: 0.85rem;">${isFarsi ? 'URL منبع لیست IP ترجیحی سفارشی، اگر خالی بگذارید از آدرس پیش‌فرض استفاده می‌شود' : '自定义优选IP列表来源URL，留空则使用默认地址'}</small>
+                                <input type="text" id="yxURL" placeholder="默认: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <small style="color: #00aa00; font-size: 0.85rem;">自定义优选IP列表来源URL，留空则使用默认地址</small>
                         </div>
                         
                         <div style="margin-bottom: 20px; padding: 15px; background: rgba(0, 40, 0, 0.6); border: 2px solid #00aa00; border-radius: 8px;">
@@ -2547,7 +2274,7 @@
                                     <input type="number" id="randomIPCount" value="20" min="1" max="100" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px;">
                                 </div>
                                 <div style="width: 80px;">
-                                    <label style="display: block; margin-bottom: 5px; color: #00ff00; font-size: 0.9rem;">${isFarsi ? 'رشته‌ها' : '线程'}</label>
+                                    <label style="display: block; margin-bottom: 5px; color: #00ff00; font-size: 0.9rem;">线程</label>
                                     <input type="number" id="testThreads" value="5" min="1" max="50" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px;">
                                 </div>
                             </div>
@@ -2585,8 +2312,8 @@
                         
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.socks5Config}</label>
-                                <input type="text" id="socksConfig" placeholder="${isFarsi ? 'مثال: user:pass@host:port یا host:port' : '例如: user:pass@host:port 或 host:port'}" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                                <small style="color: #00aa00; font-size: 0.85rem;">${isFarsi ? 'آدرس پروکسی SOCKS5، برای انتقال تمام ترافیک خروجی استفاده می‌شود' : 'SOCKS5代理地址，用于转发所有出站流量'}</small>
+                                <input type="text" id="socksConfig" placeholder="例如: user:pass@host:port 或 host:port" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <small style="color: #00aa00; font-size: 0.85rem;">SOCKS5代理地址，用于转发所有出站流量</small>
                         </div>
                             <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">${t.saveConfig}</button>
                     </form>
@@ -2746,57 +2473,7 @@
                     return null;
                 }
                 
-                const browserLang = navigator.language || navigator.userLanguage || '';
-                const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                let isFarsi = false;
-                
-                if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                    isFarsi = true;
-                } else if (savedLang === 'zh' || savedLang === 'zh-CN') {
-                    isFarsi = false;
-                } else {
-                    isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                }
-                
-                const t = translations[isFarsi ? 'fa' : 'zh'];
-                
-                function changeLanguage(lang) {
-                    localStorage.setItem('preferredLanguage', lang);
-                    // 设置Cookie（有效期1年）
-                    const expiryDate = new Date();
-                    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                    document.cookie = 'preferredLanguage=' + lang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                    // 刷新页面，不使用URL参数
-                    window.location.reload();
-                }
-                
-                // 页面加载时检查 localStorage 和 Cookie，并清理URL参数
-                window.addEventListener('DOMContentLoaded', function() {
-                    const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const urlLang = urlParams.get('lang');
-                    
-                    // 如果URL中有语言参数，移除它并设置Cookie
-                    if (urlLang) {
-                        const currentUrl = new URL(window.location.href);
-                        currentUrl.searchParams.delete('lang');
-                        const newUrl = currentUrl.toString();
-                        
-                        // 设置Cookie
-                        const expiryDate = new Date();
-                        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                        document.cookie = 'preferredLanguage=' + urlLang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                        localStorage.setItem('preferredLanguage', urlLang);
-                        
-                        // 使用history API移除URL参数，不刷新页面
-                        window.history.replaceState({}, '', newUrl);
-                    } else if (savedLang) {
-                        // 如果localStorage中有但Cookie中没有，同步到Cookie
-                        const expiryDate = new Date();
-                        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                        document.cookie = 'preferredLanguage=' + savedLang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                    }
-                });
+                const t = translations;
             
             function tryOpenApp(schemeUrl, fallbackCallback, timeout) {
                 timeout = timeout || 2500;
@@ -2994,72 +2671,33 @@
                             return null;
                         }
                         
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                        let isFarsi = false;
-                        
-                        if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                            isFarsi = true;
-                        } else if (savedLang === 'zh' || savedLang === 'zh-CN') {
-                            isFarsi = false;
-                        } else {
-                            isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        }
-                        
                         const translations = {
-                            zh: {
-                                workerRegion: 'Worker地区: ',
-                                detectionMethod: '检测方式: ',
-                                proxyIPStatus: 'ProxyIP状态: ',
-                                currentIP: '当前使用IP: ',
-                                regionMatch: '地区匹配: ',
-                                regionNames: {
-                        'US': '🇺🇸 美国', 'SG': '🇸🇬 新加坡', 'JP': '🇯🇵 日本',
-                        'KR': '🇰🇷 韩国', 'DE': '🇩🇪 德国', 'SE': '🇸🇪 瑞典', 'NL': '🇳🇱 荷兰',
-                        'FI': '🇫🇮 芬兰', 'GB': '🇬🇧 英国'
-                                },
-                                customIPMode: '自定义ProxyIP模式 (p变量启用)',
-                                customIPModeDesc: '自定义IP模式 (已禁用地区匹配)',
-                                usingCustomProxyIP: '使用自定义ProxyIP: ',
-                                customIPConfig: ' (p变量配置)',
-                                customIPModeDisabled: '自定义IP模式，地区选择已禁用',
-                                manualRegion: '手动指定地区',
-                                manualRegionDesc: ' (手动指定)',
-                                proxyIPAvailable: '10/10 可用 (ProxyIP域名预设可用)',
-                                smartSelection: '智能就近选择中',
-                                sameRegionIP: '同地区IP可用 (1个)',
-                                cloudflareDetection: 'Cloudflare内置检测',
-                                detectionFailed: '检测失败',
-                                unknown: '未知'
+                            workerRegion: 'Worker地区: ',
+                            detectionMethod: '检测方式: ',
+                            proxyIPStatus: 'ProxyIP状态: ',
+                            currentIP: '当前使用IP: ',
+                            regionMatch: '地区匹配: ',
+                            regionNames: {
+                                'US': '🇺🇸 美国', 'SG': '🇸🇬 新加坡', 'JP': '🇯🇵 日本',
+                                'KR': '🇰🇷 韩国', 'DE': '🇩🇪 德国', 'SE': '🇸🇪 瑞典', 'NL': '🇳🇱 荷兰',
+                                'FI': '🇫🇮 芬兰', 'GB': '🇬🇧 英国'
                             },
-                            fa: {
-                                workerRegion: 'منطقه Worker: ',
-                                detectionMethod: 'روش تشخیص: ',
-                                proxyIPStatus: 'وضعیت ProxyIP: ',
-                                currentIP: 'IP فعلی: ',
-                                regionMatch: 'تطبیق منطقه: ',
-                                regionNames: {
-                                    'US': '🇺🇸 آمریکا', 'SG': '🇸🇬 سنگاپور', 'JP': '🇯🇵 ژاپن',
-                                    'KR': '🇰🇷 کره جنوبی', 'DE': '🇩🇪 آلمان', 'SE': '🇸🇪 سوئد', 'NL': '🇳🇱 هلند',
-                                    'FI': '🇫🇮 فنلاند', 'GB': '🇬🇧 بریتانیا'
-                                },
-                                customIPMode: 'حالت ProxyIP سفارشی (متغیر p فعال است)',
-                                customIPModeDesc: 'حالت IP سفارشی (تطبیق منطقه غیرفعال است)',
-                                usingCustomProxyIP: 'استفاده از ProxyIP سفارشی: ',
-                                customIPConfig: ' (پیکربندی متغیر p)',
-                                customIPModeDisabled: 'حالت IP سفارشی، انتخاب منطقه غیرفعال است',
-                                manualRegion: 'تعیین منطقه دستی',
-                                manualRegionDesc: ' (تعیین دستی)',
-                                proxyIPAvailable: '10/10 در دسترس (دامنه پیش‌فرض ProxyIP در دسترس است)',
-                                smartSelection: 'انتخاب هوشمند نزدیک در حال انجام است',
-                                sameRegionIP: 'IP هم‌منطقه در دسترس است (1)',
-                                cloudflareDetection: 'تشخیص داخلی Cloudflare',
-                                detectionFailed: 'تشخیص ناموفق',
-                                unknown: 'ناشناخته'
-                            }
+                            customIPMode: '自定义ProxyIP模式 (p变量启用)',
+                            customIPModeDesc: '自定义IP模式 (已禁用地区匹配)',
+                            usingCustomProxyIP: '使用自定义ProxyIP: ',
+                            customIPConfig: ' (p变量配置)',
+                            customIPModeDisabled: '自定义IP模式，地区选择已禁用',
+                            manualRegion: '手动指定地区',
+                            manualRegionDesc: ' (手动指定)',
+                            proxyIPAvailable: '10/10 可用 (ProxyIP域名预设可用)',
+                            smartSelection: '智能就近选择中',
+                            sameRegionIP: '同地区IP可用 (1个)',
+                            cloudflareDetection: 'Cloudflare内置检测',
+                            detectionFailed: '检测失败',
+                            unknown: '未知'
                         };
                         
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                     
                     let detectedRegion = 'US'; // 默认值
                     let isCustomIPMode = false;
@@ -3130,36 +2768,16 @@
                             return null;
                         }
                         
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                        let isFarsi = false;
-                        
-                        if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                            isFarsi = true;
-                        } else {
-                            isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        }
-                        
                         const translations = {
-                            zh: {
-                                workerRegion: 'Worker地区: ',
-                                detectionMethod: '检测方式: ',
-                                proxyIPStatus: 'ProxyIP状态: ',
-                                currentIP: '当前使用IP: ',
-                                regionMatch: '地区匹配: ',
-                                detectionFailed: '检测失败'
-                            },
-                            fa: {
-                                workerRegion: 'منطقه Worker: ',
-                                detectionMethod: 'روش تشخیص: ',
-                                proxyIPStatus: 'وضعیت ProxyIP: ',
-                                currentIP: 'IP فعلی: ',
-                                regionMatch: 'تطبیق منطقه: ',
-                                detectionFailed: 'تشخیص ناموفق'
-                            }
+                            workerRegion: 'Worker地区: ',
+                            detectionMethod: '检测方式: ',
+                            proxyIPStatus: 'ProxyIP状态: ',
+                            currentIP: '当前使用IP: ',
+                            regionMatch: '地区匹配: ',
+                            detectionFailed: '检测失败'
                         };
                         
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                         
                         document.getElementById('regionStatus').innerHTML = t.workerRegion + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
                         document.getElementById('geoInfo').innerHTML = t.detectionMethod + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
@@ -3178,34 +2796,15 @@
                             return null;
                         }
                         
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                        let isFarsi = false;
-                        
-                        if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                            isFarsi = true;
-                        } else {
-                            isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        }
-                        
                         const translations = {
-                            zh: {
-                                apiTestResult: 'API检测结果: ',
-                                apiTestTime: '检测时间: ',
-                                apiTestFailed: 'API检测失败: ',
-                                unknownError: '未知错误',
-                                apiTestError: 'API测试失败: '
-                            },
-                            fa: {
-                                apiTestResult: 'نتیجه تشخیص API: ',
-                                apiTestTime: 'زمان تشخیص: ',
-                                apiTestFailed: 'تشخیص API ناموفق: ',
-                                unknownError: 'خطای ناشناخته',
-                                apiTestError: 'تست API ناموفق: '
-                            }
+                            apiTestResult: 'API检测结果: ',
+                            apiTestTime: '检测时间: ',
+                            apiTestFailed: 'API检测失败: ',
+                            unknownError: '未知错误',
+                            apiTestError: 'API测试失败: '
                         };
                         
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                         
                     const response = await fetch(window.location.pathname + '/test-api');
                     const data = await response.json();
@@ -3223,22 +2822,11 @@
                             return null;
                         }
                         
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                        let isFarsi = false;
-                        
-                        if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                            isFarsi = true;
-                        } else {
-                            isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        }
-                        
                         const translations = {
-                            zh: { apiTestError: 'API测试失败: ' },
-                            fa: { apiTestError: 'تست API ناموفق: ' }
+                            apiTestError: 'API测试失败: '
                         };
                         
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                         alert(t.apiTestError + error.message);
                 }
             }
@@ -3257,40 +2845,18 @@
                             return null;
                         }
                         
-                        const browserLang = navigator.language || navigator.userLanguage || '';
-                        const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                        let isFarsi = false;
-                        
-                        if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                            isFarsi = true;
-                        } else {
-                            isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                        }
-                        
                         const translations = {
-                            zh: {
-                                kvDisabled: '⚠️ KV存储未启用或未配置',
-                                kvNotConfigured: 'KV存储未配置，无法使用配置管理功能。\\n\\n请在Cloudflare Workers中:\\n1. 创建KV命名空间\\n2. 绑定环境变量 C\\n3. 重新部署代码',
-                                kvNotEnabled: 'KV存储未配置',
-                                kvEnabled: '✅ KV存储已启用，可以使用配置管理功能',
-                                kvCheckFailed: '⚠️ KV存储检测失败',
-                                kvCheckFailedFormat: 'KV存储检测失败: 响应格式错误',
-                                kvCheckFailedStatus: 'KV存储检测失败 - 状态码: ',
-                                kvCheckFailedError: 'KV存储检测失败 - 错误: '
-                            },
-                            fa: {
-                                kvDisabled: '⚠️ ذخیره‌سازی KV فعال نیست یا پیکربندی نشده است',
-                                kvNotConfigured: 'ذخیره‌سازی KV پیکربندی نشده است، نمی‌توانید از عملکرد مدیریت تنظیمات استفاده کنید.\\n\\nلطفا در Cloudflare Workers:\\n1. فضای نام KV ایجاد کنید\\n2. متغیر محیطی C را پیوند دهید\\n3. کد را دوباره مستقر کنید',
-                                kvNotEnabled: 'ذخیره‌سازی KV پیکربندی نشده است',
-                                kvEnabled: '✅ ذخیره‌سازی KV فعال است، می‌توانید از مدیریت تنظیمات استفاده کنید',
-                                kvCheckFailed: '⚠️ بررسی ذخیره‌سازی KV ناموفق',
-                                kvCheckFailedFormat: 'بررسی ذخیره‌سازی KV ناموفق: خطای فرمت پاسخ',
-                                kvCheckFailedStatus: 'بررسی ذخیره‌سازی KV ناموفق - کد وضعیت: ',
-                                kvCheckFailedError: 'بررسی ذخیره‌سازی KV ناموفق - خطا: '
-                            }
+                            kvDisabled: '⚠️ KV存储未启用或未配置',
+                            kvNotConfigured: 'KV存储未配置，无法使用配置管理功能。\\n\\n请在Cloudflare Workers中:\\n1. 创建KV命名空间\\n2. 绑定环境变量 C\\n3. 重新部署代码',
+                            kvNotEnabled: 'KV存储未配置',
+                            kvEnabled: '✅ KV存储已启用，可以使用配置管理功能',
+                            kvCheckFailed: '⚠️ KV存储检测失败',
+                            kvCheckFailedFormat: 'KV存储检测失败: 响应格式错误',
+                            kvCheckFailedStatus: 'KV存储检测失败 - 状态码: ',
+                            kvCheckFailedError: 'KV存储检测失败 - 错误: '
                         };
                         
-                        const t = translations[isFarsi ? 'fa' : 'zh'];
+                        const t = translations;
                         
                         if (response.status === 503) {
                             // KV未配置
@@ -3330,28 +2896,12 @@
                         return null;
                     }
                     
-                    const browserLang = navigator.language || navigator.userLanguage || '';
-                    const savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
-                    let isFarsi = false;
-                    
-                    if (savedLang === 'fa' || savedLang === 'fa-IR') {
-                        isFarsi = true;
-                    } else {
-                        isFarsi = browserLang.includes('fa') || browserLang.includes('fa-IR');
-                    }
-                    
                     const translations = {
-                        zh: {
-                            kvDisabled: '⚠️ KV存储未启用或未配置',
-                            kvCheckFailedError: 'KV存储检测失败 - 错误: '
-                        },
-                        fa: {
-                            kvDisabled: '⚠️ ذخیره‌سازی KV فعال نیست یا پیکربندی نشده است',
-                            kvCheckFailedError: 'بررسی ذخیره‌سازی KV ناموفق - خطا: '
-                        }
+                        kvDisabled: '⚠️ KV存储未启用或未配置',
+                        kvCheckFailedError: 'KV存储检测失败 - 错误: '
                     };
                     
-                    const t = translations[isFarsi ? 'fa' : 'zh'];
+                    const t = translations;
                     
                     document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                     document.getElementById('configCard').style.display = 'block';
@@ -3812,7 +3362,7 @@
                         const ips = generateCFRandomIPs(count, port);
                         document.getElementById('latencyTestInput').value = ips.join(',');
                         manualInputDiv.style.display = 'block';
-                        showStatus('${isFarsi ? 'تولید شد' : '已生成'} ' + count + ' ${isFarsi ? 'IP تصادفی CF' : '个CF随机IP'}', 'success');
+                        showStatus('已生成 ' + count + ' 个CF随机IP', 'success');
                     });
                 }
                 
@@ -3821,12 +3371,12 @@
                         const urlInput = document.getElementById('fetchURLInput');
                         const fetchUrl = urlInput.value.trim();
                         if (!fetchUrl) {
-                            alert('${isFarsi ? 'لطفا URL را وارد کنید' : '请输入URL'}');
+                            alert('请输入URL');
                             return;
                         }
                         
                         fetchIPBtn.disabled = true;
-                        fetchIPBtn.textContent = '${isFarsi ? 'در حال دریافت...' : '获取中...'}';
+                        fetchIPBtn.textContent = '获取中...';
                         
                         try {
                             const response = await fetch(fetchUrl);
@@ -3837,15 +3387,15 @@
                             if (lines.length > 0) {
                                 document.getElementById('latencyTestInput').value = lines.join(',');
                                 manualInputDiv.style.display = 'block';
-                                showStatus('${isFarsi ? 'دریافت شد' : '已获取'} ' + lines.length + ' ${isFarsi ? 'IP' : '个IP'}', 'success');
+                                showStatus('已获取 ' + lines.length + ' 个IP', 'success');
                             } else {
-                                showStatus('${isFarsi ? 'داده‌ای یافت نشد' : '未获取到数据'}', 'error');
+                                showStatus('未获取到数据', 'error');
                             }
                         } catch (err) {
-                            showStatus('${isFarsi ? 'خطا در دریافت' : '获取失败'}: ' + err.message, 'error');
+                            showStatus('获取失败: ' + err.message, 'error');
                         } finally {
                             fetchIPBtn.disabled = false;
-                            fetchIPBtn.textContent = '⬇ ${isFarsi ? 'دریافت IP' : '获取IP'}';
+                            fetchIPBtn.textContent = '⬇ 获取IP';
                         }
                     });
                 }
@@ -3860,7 +3410,7 @@
                         const threads = parseInt(threadsField.value) || 5;
                         
                         if (!inputValue) {
-                            showStatus('${isFarsi ? 'لطفا IP یا دامنه وارد کنید' : '请输入IP或域名'}', 'error');
+                            showStatus('请输入IP或域名', 'error');
                             return;
                         }
                         
@@ -3924,7 +3474,7 @@
                                 const coloDisplay = coloName ? ' <span style="color: #00aaff;">[' + coloName + ']</span>' : '';
                                 info.innerHTML = '<span style="color: #00ff00;">' + result.host + ':' + result.port + '</span>' + coloDisplay + ' <span style="color: #ffff00;">' + result.latency + 'ms</span>';
                             } else {
-                                const errorDetail = result.error || '${isFarsi ? 'زمان تمام شد' : '超时'}';
+                                const errorDetail = result.error || '超时';
                                 const testUrlDisplay = result.testUrl ? '<br><span style="color: #888; font-size: 11px;">URL: ' + result.testUrl + '</span>' : '';
                                 info.innerHTML = '<span style="color: #ff4444;">' + result.host + ':' + result.port + '</span> <span style="color: #ff6666; font-size: 12px;">' + errorDetail + '</span>' + testUrlDisplay;
                             }
@@ -3948,7 +3498,7 @@
                             if (testAbortController.signal.aborted) break;
                             
                             const batch = targets.slice(i, Math.min(i + threads, total));
-                            testStatus.textContent = '${isFarsi ? 'در حال تست' : '测试中'}: ' + (i + 1) + '-' + Math.min(i + threads, total) + '/' + total + ' (${isFarsi ? 'رشته‌ها' : '线程'}: ' + threads + ')';
+                            testStatus.textContent = '测试中: ' + (i + 1) + '-' + Math.min(i + threads, total) + '/' + total + ' (线程: ' + threads + ')';
                             
                             const results = await Promise.all(batch.map(t => testOne(t)));
                             
@@ -3962,7 +3512,7 @@
                             }
                         }
                         
-                        testStatus.textContent = '${isFarsi ? 'تست کامل شد' : '测试完成'}: ' + completed + '/' + total;
+                        testStatus.textContent = '测试完成: ' + completed + '/' + total;
                         startTestBtn.style.display = 'inline-block';
                         stopTestBtn.style.display = 'none';
                     });
@@ -3975,7 +3525,7 @@
                         }
                         startTestBtn.style.display = 'inline-block';
                         stopTestBtn.style.display = 'none';
-                        testStatus.textContent = '${isFarsi ? 'تست متوقف شد' : '测试已停止'}';
+                        testStatus.textContent = '测试已停止';
                     });
                 }
                 
@@ -3997,7 +3547,7 @@
                     addSelectedBtn.addEventListener('click', async function() {
                         const checkboxes = resultsList.querySelectorAll('input[type="checkbox"]:checked');
                         if (checkboxes.length === 0) {
-                            showStatus('${isFarsi ? 'لطفا حداقل یک مورد انتخاب کنید' : '请至少选择一项'}', 'error');
+                            showStatus('请至少选择一项', 'error');
                             return;
                         }
                         
@@ -4018,7 +3568,7 @@
                             yxInput.value = newValue;
                             
                             addSelectedBtn.disabled = true;
-                            addSelectedBtn.textContent = '${isFarsi ? 'در حال ذخیره...' : '保存中...'}';
+                            addSelectedBtn.textContent = '保存中...';
                             
                             try {
                                 const configData = {
@@ -4028,12 +3578,12 @@
                                     socksConfig: document.getElementById('socksConfig').value
                                 };
                                 await saveConfig(configData);
-                                showStatus('${isFarsi ? 'موفقیت‌آمیز بود' : '已替换'} ' + selectedItems.length + ' ${isFarsi ? 'مورد و ذخیره شد' : '项并已保存'}', 'success');
+                                showStatus('已替换 ' + selectedItems.length + ' 项并已保存', 'success');
                             } catch (err) {
-                                showStatus('${isFarsi ? 'خطا در ذخیره' : '保存失败'}: ' + err.message, 'error');
+                                showStatus('保存失败: ' + err.message, 'error');
                             } finally {
                                 addSelectedBtn.disabled = false;
-                                addSelectedBtn.textContent = '✓ ${isFarsi ? 'افزودن انتخاب‌شده‌ها به لیست ترجیحی' : '添加选中项到优选列表'}';
+                                addSelectedBtn.textContent = '✓ 添加选中项到优选列表';
                             }
                         }
                     });
@@ -4167,7 +3717,7 @@
                         
                         return { success: true, latency: latency, colo: colo, testUrl: testUrl };
                     } catch (error) {
-                        const errorMsg = error.name === 'AbortError' ? (isFarsi ? 'زمان تمام شد' : '超时') : error.message;
+                        const errorMsg = error.name === 'AbortError' ? '超时' : error.message;
                         console.log('[LatencyTest] Error:', errorMsg, 'URL:', testUrl);
                         return { success: false, latency: -1, error: errorMsg, colo: '', testUrl: testUrl };
                     }
