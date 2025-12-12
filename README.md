@@ -180,7 +180,114 @@ git push origin main
 2. 在 Cloudflare Dashboard 中使用 Snippets 功能
 3. 粘贴代码并保存
 
-#### 第六步：访问订阅
+#### 第六步（可选但推荐）：配置 KV 存储空间
+
+KV 存储可以让你通过图形化界面管理配置，无需修改代码。**强烈推荐配置！**
+
+##### 为什么需要 KV 存储？
+
+- ✅ **图形化管理** - 通过 Web 界面管理优选 IP、协议配置等
+- ✅ **无需重新部署** - 修改配置立即生效
+- ✅ **动态更新** - 支持 API 管理优选列表
+- ✅ **配置持久化** - 配置永久保存在 Cloudflare
+
+##### Workers 中配置 KV
+
+**步骤 1：创建 KV 命名空间**
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 进入 **Workers & Pages**
+3. 点击左侧菜单的 **KV**
+4. 点击 **Create a namespace** 按钮
+5. 输入命名空间名称（例如：`proxy-config`）
+6. 点击 **Add** 创建
+
+**步骤 2：绑定 KV 到 Worker**
+
+1. 返回 **Workers & Pages**
+2. 点击你创建的 Worker（例如：`my-proxy`）
+3. 进入 **Settings** 标签页
+4. 找到 **Variables** 部分
+5. 滚动到 **KV Namespace Bindings**
+6. 点击 **Add binding** 按钮
+7. 填写配置：
+   - **Variable name**: `C` （必须是大写字母 C）
+   - **KV namespace**: 选择刚才创建的 `proxy-config`
+8. 点击 **Save** 保存
+9. 点击 **Deploy** 重新部署 Worker
+
+**步骤 3：验证 KV 配置**
+
+1. 访问 `https://your-worker.workers.dev/{UUID}`
+2. 如果看到图形化配置界面，说明 KV 配置成功
+3. 你可以在页面上修改各种配置并保存
+
+##### Pages 中配置 KV
+
+**步骤 1：创建 KV 命名空间**（同上）
+
+**步骤 2：绑定 KV 到 Pages**
+
+1. 进入 **Workers & Pages**
+2. 点击你的 Pages 项目
+3. 进入 **Settings** 标签页
+4. 找到 **Functions**
+5. 滚动到 **KV namespace bindings**
+6. 点击 **Add binding**
+7. 配置：
+   - **Variable name**: `C`
+   - **KV namespace**: 选择 `proxy-config`
+8. 点击 **Save** 保存
+
+**步骤 3：重新部署**
+
+1. 返回项目的 **Deployments** 页面
+2. 点击最新部署右侧的 **︙** 菜单
+3. 选择 **Retry deployment** 重新部署
+
+##### KV 存储的配置项说明
+
+通过图形化界面（访问 `/{UUID}`）可以配置：
+
+| 配置项 | KV 键名 | 说明 |
+|--------|---------|------|
+| 优选 IP 列表 | `preferredIPs` | 自定义优选 IP 和端口 |
+| 优选域名开关 | `enablePreferredDomain` | 启用/禁用域名优选 |
+| 优选 IP 开关 | `enablePreferredIP` | 启用/禁用 IP 优选 |
+| GitHub 优选开关 | `enableGitHubIP` | 启用/禁用 GitHub 优选 |
+| VLESS 协议 | `enableVless` | 启用/禁用 VLESS |
+| Trojan 协议 | `enableTrojan` | 启用/禁用 Trojan |
+| xhttp 协议 | `enableXhttp` | 启用/禁用 xhttp |
+| Trojan 密码 | `trojanPassword` | 自定义 Trojan 密码 |
+| 自定义路径 | `customPath` | 修改访问路径 |
+| API 管理开关 | `apiEnabled` | 启用/禁用 API 管理 |
+
+##### 手动管理 KV 数据
+
+如果需要手动编辑 KV 数据：
+
+1. 进入 **Workers & Pages** → **KV**
+2. 点击你的命名空间（`proxy-config`）
+3. 点击 **Add entry** 添加新配置
+4. 或点击已有配置进行编辑
+
+**常用 KV 配置示例：**
+
+```
+键：preferredIPs
+值：1.1.1.1:443#香港节点,8.8.8.8:443#美国节点
+
+键：enableVless
+值：true
+
+键：enableTrojan
+值：false
+
+键：customPath
+值：mypath
+```
+
+#### 第七步：访问订阅
 
 部署完成后，访问以下地址：
 
