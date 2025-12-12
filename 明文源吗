@@ -663,6 +663,11 @@ export default {
                 }
 
                 if (url.pathname === '/') {
+                    // 直接返回404，隐藏Worker的存在
+                    return new Response('Not Found', {
+                        status: 404,
+                        headers: { 'Content-Type': 'text/plain' }
+                    });
                     // 检查是否有自定义首页URL配置
                     const customHomepage = getConfigValue('homepage', env.homepage || env.HOMEPAGE);
                     if (customHomepage && customHomepage.trim()) {
