@@ -146,15 +146,21 @@ jobs:
 
       - name: Verify release file before upload
         run: |
-          if [ ! -f "少年你相信光吗.txt" ]; then
+          RELEASE_FILE="少年你相信光吗.txt"
+          if [ ! -f "$RELEASE_FILE" ]; then
             echo "错误：Release 文件不存在"
+            ls -la
             exit 1
           fi
-          FILE_SIZE=$(stat -f%z "少年你相信光吗.txt" 2>/dev/null || stat -c%s "少年你相信光吗.txt" 2>/dev/null || echo "unknown")
-          echo "准备上传的文件大小: $FILE_SIZE 字节"
-          ls -lh "少年你相信光吗.txt" || echo "文件列表失败"
+          FILE_SIZE=$(wc -c < "$RELEASE_FILE" || stat -c%s "$RELEASE_FILE" 2>/dev/null || stat -f%z "$RELEASE_FILE" 2>/dev/null || echo "unknown")
+          echo "准备上传的文件: $RELEASE_FILE"
+          echo "文件大小: $FILE_SIZE 字节 ($(($FILE_SIZE / 1024)) KB)"
+          if [ "$FILE_SIZE" -lt 1000000 ]; then
+            echo "警告：文件大小异常小，可能有问题"
+          fi
+          ls -lh "$RELEASE_FILE"
           pwd
-          find . -name "*少年*" -type f || echo "查找文件失败"
+          file "$RELEASE_FILE" || echo "文件类型检查失败"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -174,8 +180,12 @@ jobs:
             - 构建时间: ${{ steps.build-info.outputs.build_date }}
             - 构建分支: ${{ github.ref_name }}
             - 提交哈希: ${{ github.sha }}
+            
+            ### 文件说明
+            - **少年你相信光吗.txt**: 混淆后的完整代码文件（约1.2MB）
           files: |
             少年你相信光吗.txt
+          generate_release_notes: false
           draft: false
           prerelease: false
         env:
