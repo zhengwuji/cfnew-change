@@ -1,8 +1,8 @@
 import { connect } from 'cloudflare:sockets';
 
-// 登录凭证配置
-let loginUsername = 'admin';  // 默认用户名
-let loginPassword = 'password123';  // 默认密码
+// 登录凭证配置（需要在 Cloudflare Workers 环境变量中设置）
+let loginUsername = '';  // 必须在环境变量中配置 loginUser
+let loginPassword = '';  // 必须在环境变量中配置 loginPass
 let cookieSecret = 'your-secret-key-change-this';  // Cookie 密钥，建议修改
 let fixedCookie = '';  // 固定 Cookie 值（可选），在 Workers 环境变量中配置 COOKIE
 
@@ -740,10 +740,24 @@ export default {
 
                 // 处理登录页面和认证
                 if (url.pathname === '/') {
+                    // 检查是否配置了登录凭证
+                    if (!loginUsername || !loginPassword) {
+                        return await handleConfigGuide(request, env);
+                    }
                     return await handleLoginPage(request, env);
                 }
 
                 if (url.pathname === '/login') {
+                    // 检查是否配置了登录凭证
+                    if (!loginUsername || !loginPassword) {
+                        return new Response(JSON.stringify({
+                            success: false,
+                            message: '未配置登录凭证，请先在 Cloudflare Workers 环境变量中设置 loginUser 和 loginPass'
+                        }), {
+                            status: 500,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
                     return await handleLoginAuth(request, env);
                 }
 
@@ -5199,6 +5213,262 @@ async function fetchPreferredAPI(urls, defaultPort = '443', timeout = 3000) {
         } catch (e) { }
     }));
     return Array.from(results);
+}
+
+
+// 配置指导页面
+async function handleConfigGuide(request, env) {
+    const guideHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置指导 - Cloudflare Workers</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .alert h2 {
+            color: #856404;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .alert p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        .step {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .step-number {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 36px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .step h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .step p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .code-block code {
+            display: block;
+            line-height: 1.6;
+        }
+        .variable {
+            background: #e7f3ff;
+            border-left: 3px solid #2196f3;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .variable strong {
+            color: #1976d2;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .variable span {
+            color: #666;
+            font-size: 14px;
+        }
+        .screenshot {
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+            color: #999;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        ul {
+            margin-left: 20px;
+            color: #666;
+        }
+        ul li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">⚙️</div>
+            <h1>配置登录凭证</h1>
+        </div>
+
+        <div class="alert">
+            <h2>⚠️ 需要配置环境变量</h2>
+            <p>检测到您还没有配置登录用户名和密码。为了使用本系统，请按照以下步骤在 Cloudflare Workers 中配置环境变量。</p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">1</span>登录 Cloudflare Dashboard</h3>
+            <p>访问 <a href="https://dash.cloudflare.com/" target="_blank">https://dash.cloudflare.com/</a> 并登录您的账号</p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">2</span>进入 Workers 页面</h3>
+            <p>在左侧菜单中点击 <strong>"Workers & Pages"</strong>，找到您的 Worker 项目并点击进入</p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">3</span>打开设置页面</h3>
+            <p>点击顶部的 <strong>"Settings"</strong> 选项卡</p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">4</span>添加环境变量</h3>
+            <p>找到 <strong>"Variables"</strong> 部分，点击 <strong>"Add variable"</strong> 按钮</p>
+            
+            <div class="variable">
+                <strong>第一个环境变量：</strong>
+                <div class="code-block">
+                    <code>变量名（Variable name）: loginUser</code>
+                    <code>值（Value）: 你的用户名（例如：admin、my 等）</code>
+                </div>
+                <span>💡 提示：用户名可以是任意字母或数字组合</span>
+            </div>
+
+            <div class="variable">
+                <strong>第二个环境变量：</strong>
+                <div class="code-block">
+                    <code>变量名（Variable name）: loginPass</code>
+                    <code>值（Value）: 你的密码</code>
+                </div>
+                <span>⚠️ 建议：使用强密码，包含大小写字母、数字和特殊字符，长度至少 16 位</span>
+            </div>
+
+            <p style="margin-top: 20px;">示例配置：</p>
+            <div class="code-block">
+<code># 环境变量配置示例</code>
+<code>loginUser = myusername</code>
+<code>loginPass = MyStr0ng!P@ssw0rd2024</code>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">5</span>保存并部署</h3>
+            <p>添加完环境变量后：</p>
+            <ul>
+                <li>点击 <strong>"Save and Deploy"</strong> 按钮</li>
+                <li>等待部署完成（通常需要 10-30 秒）</li>
+                <li>刷新本页面即可看到登录界面</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">6</span>可选配置</h3>
+            <p>您还可以配置以下可选环境变量：</p>
+            
+            <div class="variable">
+                <strong>固定 Cookie 值（适合 API 访问）：</strong>
+                <div class="code-block">
+                    <code>变量名: cookie</code>
+                    <code>值: 一个随机字符串（至少 32 位）</code>
+                </div>
+            </div>
+
+            <div class="variable">
+                <strong>Cookie 加密密钥：</strong>
+                <div class="code-block">
+                    <code>变量名: cookieSecret</code>
+                    <code>值: 一个随机字符串（建议修改默认值）</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>配置完成后，刷新页面即可使用登录功能</p>
+            <a href="/" class="btn">刷新页面</a>
+            <p style="margin-top: 20px; font-size: 12px;">Powered by Cloudflare Workers</p>
+        </div>
+    </div>
+</body>
+</html>`;
+    
+    return new Response(guideHtml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
 }
 
 // 登录页面处理函数
