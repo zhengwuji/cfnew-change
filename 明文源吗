@@ -1201,7 +1201,7 @@
                         }
                     }
                     // 移除这个向后兼容的路由，禁止随意输入
-                    // if (url.pathname.toLowerCase().includes(`/${subPath}`)) {
+                    // if (url.pathname.toLowerCase().includes('/' + subPath)) {
                     //     return await handleSubscriptionRequest(request, at);
                     // }
                 }
