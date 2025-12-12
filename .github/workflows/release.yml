@@ -6,9 +6,6 @@ on:
       - '**'
     paths:
       - '少年你相信光吗'
-    paths-ignore:
-      - 'README.md'
-      - '*.md'
 
 jobs:
   create-release:
