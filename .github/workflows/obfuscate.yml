@@ -7,6 +7,7 @@ on:
       - '**'  # 仅匹配分支推送，排除标签推送
     paths:
       - '明文源吗'
+      - '.github/workflows/obfuscate.yml'
 
 jobs:
   build-and-obfuscate:
@@ -88,7 +89,12 @@ jobs:
           EOF
           node obfuscate.js
 
-      - name: Commit and push the obfuscated file
+      - name: Prepare release file
+        run: |
+          cp '少年你相信光吗' '少年你相信光吗.txt'
+          echo "已创建txt格式文件用于releases"
+
+      - name: Commit and force push the obfuscated file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -98,7 +104,42 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit, the obfuscated file is already up-to-date."
           else
-            git commit -m "部署用这个 [$(date +'%Y-%m-%d %H:%M:%S')]"
-            git push --force origin main
+            BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+            git commit -m "部署用这个 - $BUILD_DATE"
+            git push --force
           fi
 
+      - name: Get build info
+        id: build-info
+        run: |
+          BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+          BUILD_DATE_CN=$(date '+%Y年%m月%d日 %H:%M:%S')
+          TAG_NAME=$(date '+v%Y%m%d-%H%M%S')
+          echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          echo "build_date_cn=$BUILD_DATE_CN" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.build-info.outputs.tag_name }}
+          name: "构建版本 ${{ steps.build-info.outputs.build_date }}"
+          body: |
+            ## 更新日志
+            
+            **更新日期**: ${{ steps.build-info.outputs.build_date_cn }}
+            
+            ### 更新内容
+            - 自动构建完成
+            - 源文件已混淆并转换为txt格式
+            
+            ### 构建信息
+            - 构建时间: ${{ steps.build-info.outputs.build_date }}
+            - 构建分支: ${{ github.ref_name }}
+            - 提交哈希: ${{ github.sha }}
+          files: |
+            少年你相信光吗.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
