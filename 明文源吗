@@ -2456,14 +2456,8 @@
                 
                 // 翻译对象
                 const translations = {
-                    zh: {
-                        subscriptionCopied: '订阅链接已复制',
-                        autoSubscriptionCopied: '自动识别订阅链接已复制，客户端访问时会根据User-Agent自动识别并返回对应格式'
-                    },
-                    fa: {
-                        subscriptionCopied: 'لینک اشتراک کپی شد',
-                        autoSubscriptionCopied: 'لینک اشتراک تشخیص خودکار کپی شد، کلاینت هنگام دسترسی بر اساس User-Agent به طور خودکار تشخیص داده و قالب مربوطه را برمی‌گرداند'
-                    }
+                    subscriptionCopied: '订阅链接已复制',
+                    autoSubscriptionCopied: '自动识别订阅链接已复制，客户端访问时会根据User-Agent自动识别并返回对应格式'
                 };
                 
                 function getCookie(name) {
