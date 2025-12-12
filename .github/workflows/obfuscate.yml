@@ -54,30 +54,30 @@ jobs:
               deadCodeInjection: false,
               stringArray: true,
               stringArrayEncoding: ['base64'],
-              stringArrayThreshold: 1.0,
+              stringArrayThreshold: 0.8,
               stringArrayRotate: true,
               stringArrayShuffle: true,
-              stringArrayWrappersCount: 2,
+              stringArrayWrappersCount: 1,
               stringArrayWrappersChainedCalls: false,
-              stringArrayWrappersParametersMaxCount: 3,
-              renameGlobals: true,
-              identifierNamesGenerator: 'mangled-shuffled',
+              stringArrayWrappersParametersMaxCount: 2,
+              renameGlobals: false,
+              identifierNamesGenerator: 'hexadecimal',
               identifierNamesCache: null,
               identifiersPrefix: '',
               renameProperties: false,
               renamePropertiesMode: 'safe',
-              ignoreImports: false,
+              ignoreImports: true,
               target: 'browser',
               numbersToExpressions: false,
-              simplify: false,
-              splitStrings: true,
-              splitStringsChunkLength: 1,
+              simplify: true,
+              splitStrings: false,
+              splitStringsChunkLength: 10,
               transformObjectKeys: false,
-              unicodeEscapeSequence: true,
+              unicodeEscapeSequence: false,
               selfDefending: false,
               debugProtection: false,
               debugProtectionInterval: 0,
-              disableConsoleOutput: true,
+              disableConsoleOutput: false,
               domainLock: []
           };
 
@@ -97,5 +97,5 @@ jobs:
             echo "No changes to commit, the obfuscated file is already up-to-date."
           else
             git commit -m "部署用这个"
-            git push
+            git push --force origin HEAD
           fi
