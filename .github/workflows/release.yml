@@ -1,20 +1,21 @@
 name: Auto Release on Build Complete
 
 on:
-  push:
-    branches:
-      - '**'
-    paths:
-      - '少年你相信光吗'
+  workflow_run:
+    workflows: ["Generate and Obfuscate Worker Script"]
+    types:
+      - completed
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
 
       - name: Get current date
