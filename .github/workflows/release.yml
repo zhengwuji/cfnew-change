@@ -1,0 +1,125 @@
+name: Auto Release on Build Complete
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - '少年你相信光吗'
+    paths-ignore:
+      - 'README.md'
+      - '*.md'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current date
+        id: date
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "datetime=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        run: |
+          cat > changelog.txt << 'EOF'
+          更新日志 / Update Log
+          ═══════════════════════════════════════════════
+
+          更新时间 / Update Time: ${{ steps.date.outputs.datetime }}
+          版本标签 / Version Tag: build-${{ steps.date.outputs.timestamp }}
+
+          ───────────────────────────────────────────────
+
+          本次更新内容 / Changes:
+          
+          ✅ 明文代码已更新并完成混淆处理
+          ✅ Source code updated and obfuscated
+          
+          📦 Worker脚本已自动构建
+          📦 Worker script auto-built
+          
+          🚀 可直接部署到Cloudflare Workers/Pages
+          🚀 Ready to deploy to Cloudflare Workers/Pages
+
+          ───────────────────────────────────────────────
+
+          部署说明 / Deployment Instructions:
+          
+          1. 下载 少年你相信光吗.txt 文件
+             Download 少年你相信光吗.txt file
+          
+          2. 重命名为 _worker.js (Pages) 或直接使用 (Workers)
+             Rename to _worker.js (Pages) or use directly (Workers)
+          
+          3. 上传到 Cloudflare 即可使用
+             Upload to Cloudflare and enjoy
+
+          ═══════════════════════════════════════════════
+          EOF
+
+      - name: Copy and rename worker file
+        run: |
+          cp "少年你相信光吗" "少年你相信光吗.txt"
+          echo "Worker文件已复制为txt格式"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: build-${{ steps.date.outputs.timestamp }}
+          name: 构建发布 ${{ steps.date.outputs.date }}
+          body: |
+            ## 📦 自动构建发布
+            
+            **构建时间**: ${{ steps.date.outputs.datetime }}
+            **版本标签**: build-${{ steps.date.outputs.timestamp }}
+            
+            ---
+            
+            ### 📝 更新说明
+            
+            - ✅ 明文代码已更新并完成混淆处理
+            - 📦 Worker脚本已自动构建完成
+            - 🚀 可直接部署到Cloudflare Workers/Pages
+            
+            ### 📥 下载文件
+            
+            | 文件名 | 说明 |
+            |--------|------|
+            | `少年你相信光吗.txt` | 混淆后的Worker脚本（txt格式） |
+            | `changelog.txt` | 详细更新日志 |
+            
+            ### 🚀 快速部署
+            
+            1. 下载 `少年你相信光吗.txt` 文件
+            2. Cloudflare Pages: 重命名为 `_worker.js` 后上传
+            3. Cloudflare Workers: 直接复制内容到编辑器
+            
+            ---
+            
+            > 💡 此版本由GitHub Actions自动构建并发布
+          draft: false
+          prerelease: false
+          files: |
+            少年你相信光吗.txt
+            changelog.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output summary
+        run: |
+          echo "## 🎉 Release发布成功" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **发布时间**: ${{ steps.date.outputs.datetime }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **版本标签**: build-${{ steps.date.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **包含文件**: 少年你相信光吗.txt, changelog.txt" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 下载链接" >> $GITHUB_STEP_SUMMARY
+          echo "https://github.com/${{ github.repository }}/releases/tag/build-${{ steps.date.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
