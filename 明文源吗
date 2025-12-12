@@ -3,6 +3,8 @@ import { connect } from 'cloudflare:sockets';
 // 登录凭证配置
 let loginUsername = 'admin';  // 默认用户名
 let loginPassword = 'password123';  // 默认密码
+let cookieSecret = 'your-secret-key-change-this';  // Cookie 密钥，建议修改
+let fixedCookie = '';  // 固定 Cookie 值（可选），在 Workers 环境变量中配置 COOKIE
 
 let at = '351c9981-04b6-4103-aa4b-864aa9c91469';
 let fallbackAddress = '';
@@ -114,6 +116,71 @@ function isValidIP(ip) {
     if (ipv6ShortRegex.test(ip)) return true;
 
     return false;
+}
+
+// Cookie 验证辅助函数
+function getCookie(request, name) {
+    const cookieHeader = request.headers.get('Cookie') || '';
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    for (const cookie of cookies) {
+        if (cookie.startsWith(name + '=')) {
+            return cookie.substring(name.length + 1);
+        }
+    }
+    return null;
+}
+
+async function verifyCookie(request) {
+    const authCookie = getCookie(request, 'auth_token');
+    if (!authCookie) {
+        return false;
+    }
+
+    try {
+        // 如果配置了固定 cookie，直接比较
+        if (fixedCookie && fixedCookie.trim()) {
+            return authCookie === fixedCookie;
+        }
+
+        // 否则使用动态验证：检查cookie格式是否正确
+        // 格式：username:timestamp:hash
+        const parts = authCookie.split(':');
+        if (parts.length !== 3) {
+            return false;
+        }
+
+        const [username, timestamp, hash] = parts;
+
+        // 检查时间戳是否过期（24小时）
+        const cookieTime = parseInt(timestamp);
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000; // 24小时
+
+        if (now - cookieTime > maxAge) {
+            return false;
+        }
+
+        // 验证 hash
+        const expectedHash = await generateHash(username + timestamp + cookieSecret);
+
+        return hash === expectedHash && username === loginUsername;
+    } catch (error) {
+        return false;
+    }
+}
+
+async function generateHash(data) {
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function generateAuthCookie(username) {
+    const timestamp = Date.now().toString();
+    const hash = await generateHash(username + timestamp + cookieSecret);
+    return `${username}:${timestamp}:${hash}`;
 }
 
 async function initKVStore(env) {
@@ -313,6 +380,8 @@ export default {
             // 加载登录凭证配置
             loginUsername = getConfigValue('loginUser', env.loginUser || env.LOGINUSER) || loginUsername;
             loginPassword = getConfigValue('loginPass', env.loginPass || env.LOGINPASS) || loginPassword;
+            cookieSecret = getConfigValue('cookieSecret', env.cookieSecret || env.COOKIESECRET) || cookieSecret;
+            fixedCookie = getConfigValue('cookie', env.cookie || env.COOKIE) || fixedCookie;
 
             at = (env.u || env.U || at).toLowerCase();
             const subPath = (env.d || env.D || at).toLowerCase();
@@ -709,6 +778,15 @@ export default {
                         const user = url.pathname.replace(/\/$/, '').substring(1);
                         if (isValidFormat(user)) {
                             if (user === at) {
+                                // 验证 cookie
+                                const cookieValid = await verifyCookie(request);
+                                if (!cookieValid) {
+                                    // cookie 验证失败，重定向到登录页面
+                                    return new Response('', {
+                                        status: 302,
+                                        headers: { 'Location': '/' }
+                                    });
+                                }
                                 return await handleSubscriptionPage(request, user);
                             } else {
                                 return new Response(JSON.stringify({ error: 'UUID错误 请注意变量名称是u不是uuid' }), {
@@ -724,6 +802,15 @@ export default {
                             const user = pathParts[0].substring(1);
                             if (isValidFormat(user)) {
                                 if (user === at) {
+                                    // 验证 cookie
+                                    const cookieValid = await verifyCookie(request);
+                                    if (!cookieValid) {
+                                        // cookie 验证失败，返回401错误
+                                        return new Response(JSON.stringify({ error: '未授权访问，请先登录' }), {
+                                            status: 401,
+                                            headers: { 'Content-Type': 'application/json' }
+                                        });
+                                    }
                                     return await handleSubscriptionRequest(request, user, url);
                                 } else {
                                     return new Response(JSON.stringify({ error: 'UUID错误' }), {
@@ -5275,7 +5362,7 @@ async function handleLoginPage(request, env) {
     </script>
 </body>
 </html>`;
-    
+
     return new Response(loginHtml, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
@@ -5290,13 +5377,16 @@ async function handleLoginAuth(request, env) {
             headers: { 'Content-Type': 'application/json' }
         });
     }
-    
+
     try {
         const body = await request.json();
         const { username, password } = body;
-        
+
         // 验证用户名和密码
         if (username === loginUsername && password === loginPassword) {
+            // 生成认证 cookie
+            const authCookie = await generateAuthCookie(username);
+
             return new Response(JSON.stringify({
                 success: true,
                 message: '登录成功',
@@ -5304,9 +5394,9 @@ async function handleLoginAuth(request, env) {
                 redirect: '/' + at
             }), {
                 status: 200,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Set-Cookie': 'auth=true; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict'
+                    'Set-Cookie': `auth_token=${authCookie}; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict`
                 }
             });
         } else {
