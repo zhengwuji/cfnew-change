@@ -22,8 +22,10 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Obfuscator
-        run: npm install javascript-obfuscator
+      - name: Install Obfuscator and dependencies
+        run: |
+          npm install javascript-obfuscator
+          npm install acorn
 
       - name: Obfuscate from local source file
         run: |
@@ -46,6 +48,20 @@ jobs:
           if (!originalCode || originalCode.trim().length === 0) {
             console.error('错误：源文件 ' + sourceFileName + ' 为空。');
             process.exit(1);
+          }
+
+          console.log('源文件大小: ' + originalCode.length + ' 字符');
+          console.log('开始解析代码...');
+
+          // 尝试使用简单的 AST 解析来检查语法
+          try {
+            const acorn = require('acorn');
+            acorn.parse(originalCode, { ecmaVersion: 2022, sourceType: 'module' });
+            console.log('代码语法检查通过');
+          } catch (parseError) {
+            console.error('代码语法错误:', parseError.message);
+            console.error('错误位置: 行 ' + parseError.loc?.line + ', 列 ' + parseError.loc?.column);
+            // 继续执行，让混淆器自己处理
           }
 
           const obfuscationOptions = {
@@ -82,10 +98,22 @@ jobs:
               domainLock: []
           };
 
-          const obfuscatedCode = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions).getObfuscatedCode();
+          console.log('开始混淆代码...');
+          let obfuscatedCode;
+          try {
+            const obfuscationResult = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions);
+            obfuscatedCode = obfuscationResult.getObfuscatedCode();
+            console.log('混淆成功');
+          } catch (obfuscationError) {
+            console.error('混淆失败:', obfuscationError.message);
+            console.error('错误堆栈:', obfuscationError.stack);
+            process.exit(1);
+          }
           
           fs.writeFileSync(path.join(process.cwd(), outputFileName), obfuscatedCode, 'utf8');
+          const outputSize = fs.statSync(path.join(process.cwd(), outputFileName)).size;
           console.log('成功将 \'' + sourceFileName + '\' 混淆并保存至 \'' + outputFileName + '\'。');
+          console.log('输出文件大小: ' + outputSize + ' 字节');
           EOF
           node obfuscate.js
 
