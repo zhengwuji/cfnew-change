@@ -310,8 +310,8 @@ export default {
 
             await initKVStore(env);
 
-            at = (env.u || env.U || at).toLowerCase();
-            const subPath = (env.d || env.D || at).toLowerCase();
+            at = (env.u || env.U || at);
+            const subPath = (env.d || env.D || at);
 
             const ci = getConfigValue('p', env.p || env.P);
             let useCustomIP = false;
