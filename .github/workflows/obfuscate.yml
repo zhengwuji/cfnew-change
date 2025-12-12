@@ -91,7 +91,16 @@ jobs:
 
       - name: Prepare release file
         run: |
+          if [ ! -f "少年你相信光吗" ]; then
+            echo "错误：混淆文件不存在"
+            exit 1
+          fi
+          FILE_SIZE=$(stat -f%z "少年你相信光吗" 2>/dev/null || stat -c%s "少年你相信光吗" 2>/dev/null || echo "unknown")
+          echo "混淆文件大小: $FILE_SIZE 字节"
           cp '少年你相信光吗' '少年你相信光吗.txt'
+          TXT_SIZE=$(stat -f%z "少年你相信光吗.txt" 2>/dev/null || stat -c%s "少年你相信光吗.txt" 2>/dev/null || echo "unknown")
+          echo "txt文件大小: $TXT_SIZE 字节"
+          ls -lh "少年你相信光吗.txt" || echo "文件列表失败"
           echo "已创建txt格式文件用于releases"
 
       - name: Commit and force push the obfuscated file
@@ -118,6 +127,18 @@ jobs:
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
           echo "build_date_cn=$BUILD_DATE_CN" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Verify release file before upload
+        run: |
+          if [ ! -f "少年你相信光吗.txt" ]; then
+            echo "错误：Release 文件不存在"
+            exit 1
+          fi
+          FILE_SIZE=$(stat -f%z "少年你相信光吗.txt" 2>/dev/null || stat -c%s "少年你相信光吗.txt" 2>/dev/null || echo "unknown")
+          echo "准备上传的文件大小: $FILE_SIZE 字节"
+          ls -lh "少年你相信光吗.txt" || echo "文件列表失败"
+          pwd
+          find . -name "*少年*" -type f || echo "查找文件失败"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
