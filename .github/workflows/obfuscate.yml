@@ -64,22 +64,60 @@ jobs:
             // 继续执行，让混淆器自己处理
           }
 
+          // ============================================
+          // ⚠️ 混淆强度保护机制
+          // ⚠️ 重要：混淆强度不能降低，只能增加或保持不变
+          // ⚠️ 以下定义的是最小允许值，任何低于这些值的配置都会被拒绝
+          // ============================================
+          
+          // 定义混淆强度最小值（这些值不能降低）
+          const MIN_OBFUSCATION_VALUES = {
+              // 必须启用的选项（必须为true）
+              compact: true,
+              controlFlowFlattening: true,
+              deadCodeInjection: true,
+              stringArray: true,
+              stringArrayRotate: true,
+              stringArrayShuffle: true,
+              renameGlobals: true,
+              numbersToExpressions: true,
+              simplify: true,
+              splitStrings: true,
+              unicodeEscapeSequence: true,
+              disableConsoleOutput: true,
+              
+              // 阈值最小值（只能 >= 这些值）
+              controlFlowFlatteningThreshold: 1,        // 最小值：1（最大强度）
+              deadCodeInjectionThreshold: 1,            // 最小值：1（最大强度）
+              stringArrayThreshold: 1.0,                // 最小值：1.0（100%）
+              stringArrayWrappersCount: 2,              // 最小值：2
+              stringArrayWrappersParametersMaxCount: 3, // 最小值：3
+              splitStringsChunkLength: 1                // 最小值：1（最小块长度，强度最高）
+          };
+
+          // ============================================
+          // 当前混淆配置（可以增加但不能降低）
+          // 修改说明：
+          //   - 数值选项：只能增加，不能减少
+          //   - 布尔选项（MIN中为true的）：必须保持为true
+          //   - 如果要增强混淆，可以增加数值或启用更多选项
+          // ============================================
           const obfuscationOptions = {
               compact: true,
               controlFlowFlattening: true,
-              controlFlowFlatteningThreshold: 1,
+              controlFlowFlatteningThreshold: 1,      // ⚠️ 最小值：1，只能 >= 1
               deadCodeInjection: true,
-              deadCodeInjectionThreshold: 1,
+              deadCodeInjectionThreshold: 1,          // ⚠️ 最小值：1，只能 >= 1
               stringArray: true,
-              stringArrayEncoding: ['base64'],
-              stringArrayThreshold: 1.0,
+              stringArrayEncoding: ['base64'],        // ⚠️ 可以添加更多编码，但必须包含base64
+              stringArrayThreshold: 1.0,              // ⚠️ 最小值：1.0，只能 >= 1.0
               stringArrayRotate: true,
               stringArrayShuffle: true,
-              stringArrayWrappersCount: 2,
+              stringArrayWrappersCount: 2,            // ⚠️ 最小值：2，只能 >= 2
               stringArrayWrappersChainedCalls: false,
-              stringArrayWrappersParametersMaxCount: 3,
+              stringArrayWrappersParametersMaxCount: 3, // ⚠️ 最小值：3，只能 >= 3
               renameGlobals: true,
-              identifierNamesGenerator: 'mangled-shuffled',
+              identifierNamesGenerator: 'mangled-shuffled', // ⚠️ 可以增强但不能降级
               identifierNamesCache: null,
               identifiersPrefix: '',
               renameProperties: false,
@@ -89,15 +127,79 @@ jobs:
               numbersToExpressions: true,
               simplify: true,
               splitStrings: true,
-              splitStringsChunkLength: 1,
+              splitStringsChunkLength: 1,             // ⚠️ 最小值：1，只能 >= 1
               transformObjectKeys: false,
               unicodeEscapeSequence: true,
-              selfDefending: false,
-              debugProtection: false,
+              selfDefending: false,                   // 可以改为true增强，但不能从true改为false
+              debugProtection: false,                 // 可以改为true增强，但不能从true改为false
               debugProtectionInterval: 0,
               disableConsoleOutput: true,
               domainLock: []
           };
+
+          // ============================================
+          // 验证混淆强度（确保不低于最小值）
+          // ============================================
+          console.log('🔍 验证混淆强度配置...');
+          const validationErrors = [];
+          
+          // 验证阈值不能降低
+          if (obfuscationOptions.controlFlowFlatteningThreshold < MIN_OBFUSCATION_VALUES.controlFlowFlatteningThreshold) {
+              validationErrors.push('controlFlowFlatteningThreshold (' + obfuscationOptions.controlFlowFlatteningThreshold + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.controlFlowFlatteningThreshold);
+          }
+          if (obfuscationOptions.deadCodeInjectionThreshold < MIN_OBFUSCATION_VALUES.deadCodeInjectionThreshold) {
+              validationErrors.push('deadCodeInjectionThreshold (' + obfuscationOptions.deadCodeInjectionThreshold + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.deadCodeInjectionThreshold);
+          }
+          if (obfuscationOptions.stringArrayThreshold < MIN_OBFUSCATION_VALUES.stringArrayThreshold) {
+              validationErrors.push('stringArrayThreshold (' + obfuscationOptions.stringArrayThreshold + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.stringArrayThreshold);
+          }
+          if (obfuscationOptions.stringArrayWrappersCount < MIN_OBFUSCATION_VALUES.stringArrayWrappersCount) {
+              validationErrors.push('stringArrayWrappersCount (' + obfuscationOptions.stringArrayWrappersCount + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.stringArrayWrappersCount);
+          }
+          if (obfuscationOptions.stringArrayWrappersParametersMaxCount < MIN_OBFUSCATION_VALUES.stringArrayWrappersParametersMaxCount) {
+              validationErrors.push('stringArrayWrappersParametersMaxCount (' + obfuscationOptions.stringArrayWrappersParametersMaxCount + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.stringArrayWrappersParametersMaxCount);
+          }
+          if (obfuscationOptions.splitStringsChunkLength < MIN_OBFUSCATION_VALUES.splitStringsChunkLength) {
+              validationErrors.push('splitStringsChunkLength (' + obfuscationOptions.splitStringsChunkLength + 
+                                   ') 不能低于最小值 ' + MIN_OBFUSCATION_VALUES.splitStringsChunkLength);
+          }
+          
+          // 验证必须启用的选项
+          const requiredEnabled = ['compact', 'controlFlowFlattening', 'deadCodeInjection', 'stringArray', 
+                                   'stringArrayRotate', 'stringArrayShuffle', 'renameGlobals', 
+                                   'numbersToExpressions', 'splitStrings', 'unicodeEscapeSequence', 'disableConsoleOutput'];
+          for (const key of requiredEnabled) {
+              if (MIN_OBFUSCATION_VALUES[key] === true && obfuscationOptions[key] !== true) {
+                  validationErrors.push(key + ' 必须启用（当前为 ' + obfuscationOptions[key] + '），不能禁用');
+              }
+          }
+          
+          // 验证字符串数组编码必须包含base64
+          if (!obfuscationOptions.stringArrayEncoding || 
+              !obfuscationOptions.stringArrayEncoding.includes('base64')) {
+              validationErrors.push('stringArrayEncoding 必须包含 "base64" 编码');
+          }
+          
+          if (validationErrors.length > 0) {
+              console.error('❌ 混淆强度验证失败！以下配置违反了"不能降低强度"的规则：');
+              validationErrors.forEach(err => console.error('  ✗ ' + err));
+              console.error('');
+              console.error('⚠️  规则：混淆强度只能增加或保持不变，不能降低！');
+              console.error('💡 提示：如果要调整配置，请确保所有值都 >= 最小值');
+              process.exit(1);
+          }
+          
+          console.log('✅ 混淆强度配置验证通过（所有值均不低于最小值）');
+          console.log('   - controlFlowFlatteningThreshold: ' + obfuscationOptions.controlFlowFlatteningThreshold + ' (最小值: 1)');
+          console.log('   - deadCodeInjectionThreshold: ' + obfuscationOptions.deadCodeInjectionThreshold + ' (最小值: 1)');
+          console.log('   - stringArrayThreshold: ' + obfuscationOptions.stringArrayThreshold + ' (最小值: 1.0)');
+          console.log('   - stringArrayWrappersCount: ' + obfuscationOptions.stringArrayWrappersCount + ' (最小值: 2)');
+          console.log('   - splitStringsChunkLength: ' + obfuscationOptions.splitStringsChunkLength + ' (最小值: 1)');
 
           console.log('开始混淆代码...');
           let obfuscatedCode;
