@@ -1138,7 +1138,7 @@
                     }
                 
                 if (cp && cp.trim()) {
-                const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim() : '/' + cp.trim();
+                    const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim() : '/' + cp.trim();
                 const normalizedCustomPath = cleanCustomPath.endsWith('/') && cleanCustomPath.length > 1 ? cleanCustomPath.slice(0, -1) : cleanCustomPath;
                 const normalizedPath = url.pathname.endsWith('/') && url.pathname.length > 1 ? url.pathname.slice(0, -1) : url.pathname;
                     
