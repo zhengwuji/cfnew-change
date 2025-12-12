@@ -50,35 +50,20 @@ jobs:
           const obfuscationOptions = {
               compact: true,
               controlFlowFlattening: false,
-              controlFlowFlatteningThreshold: 0,
               deadCodeInjection: false,
               stringArray: false,
-              stringArrayEncoding: [],
-              stringArrayThreshold: 0,
-              stringArrayRotate: false,
-              stringArrayShuffle: false,
-              stringArrayWrappersCount: 0,
-              stringArrayWrappersChainedCalls: false,
-              stringArrayWrappersParametersMaxCount: 0,
               renameGlobals: false,
               identifierNamesGenerator: 'hexadecimal',
-              identifierNamesCache: null,
-              identifiersPrefix: '',
               renameProperties: false,
-              renamePropertiesMode: 'safe',
               ignoreImports: true,
               target: 'browser',
-              numbersToExpressions: false,
               simplify: true,
               splitStrings: false,
-              splitStringsChunkLength: 10,
               transformObjectKeys: false,
               unicodeEscapeSequence: false,
               selfDefending: false,
               debugProtection: false,
-              debugProtectionInterval: 0,
-              disableConsoleOutput: false,
-              domainLock: []
+              disableConsoleOutput: false
           };
 
           const obfuscatedCode = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions).getObfuscatedCode();
