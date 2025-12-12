@@ -5464,7 +5464,7 @@ async function handleConfigGuide(request, env) {
     </div>
 </body>
 </html>`;
-    
+
     return new Response(guideHtml, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
@@ -5614,6 +5614,19 @@ async function handleLoginPage(request, env) {
                 
                 const data = await response.json();
                 
+                // 显示调试信息（如果有）
+                if (data.debug) {
+                    console.log('=== 登录调试信息 ===');
+                    console.log('接收到的用户名:', data.debug.receivedUsername);
+                    console.log('接收到的密码长度:', data.debug.receivedPasswordLength);
+                    console.log('配置的用户名:', data.debug.configuredUsername);
+                    console.log('配置的密码长度:', data.debug.configuredPasswordLength);
+                    console.log('用户名匹配:', data.debug.usernameMatch);
+                    console.log('密码匹配:', data.debug.passwordMatch);
+                    console.log('接收到的密码前10位:', data.debug.receivedPasswordFirst10);
+                    console.log('配置的密码前10位:', data.debug.configuredPasswordFirst10);
+                }
+                
                 if (data.success) {
                     // 登录成功，跳转到订阅页面
                     window.location.href = data.redirect || ('/' + data.uuid);
@@ -5672,7 +5685,17 @@ async function handleLoginAuth(request, env) {
         } else {
             return new Response(JSON.stringify({
                 success: false,
-                message: '用户名或密码错误'
+                message: '用户名或密码错误',
+                debug: {
+                    receivedUsername: username,
+                    receivedPasswordLength: password ? password.length : 0,
+                    configuredUsername: loginUsername,
+                    configuredPasswordLength: loginPassword ? loginPassword.length : 0,
+                    usernameMatch: username === loginUsername,
+                    passwordMatch: password === loginPassword,
+                    receivedPasswordFirst10: password ? password.substring(0, 10) : '',
+                    configuredPasswordFirst10: loginPassword ? loginPassword.substring(0, 10) : ''
+                }
             }), {
                 status: 401,
                 headers: { 'Content-Type': 'application/json' }
