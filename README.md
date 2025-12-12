@@ -287,7 +287,60 @@ KV 存储可以让你通过图形化界面管理配置，无需修改代码。**
 值：mypath
 ```
 
-#### 第七步：访问订阅
+#### 第七步（推荐）：配置 Cookie 验证保护订阅
+
+为了保护您的订阅链接不被未授权访问，本项目支持 Cookie 验证功能。
+
+##### 为什么需要 Cookie 验证？
+
+- ✅ **保护订阅链接** - 防止订阅链接被未授权用户访问
+- ✅ **用户名密码登录** - 支持登录后才能访问订阅
+- ✅ **灵活配置** - 支持固定 Cookie 或动态 Cookie 两种模式
+- ✅ **安全可靠** - 使用 HttpOnly + SameSite 保护
+
+##### 配置方法
+
+**方式 1：动态 Cookie（推荐 - 需要登录）**
+
+1. 在 Worker 环境变量中配置登录凭证：
+   ```
+   loginUser = admin          # 登录用户名
+   loginPass = yourpassword   # 登录密码
+   ```
+
+2. 用户访问流程：
+   - 访问 `https://your-worker.workers.dev/` 显示登录页面
+   - 输入用户名密码登录
+   - 登录成功后自动设置 Cookie（24小时有效）
+   - 可以正常访问订阅页面 `/{UUID}` 和订阅链接 `/{UUID}/sub`
+
+**方式 2：固定 Cookie（简单 - 适合个人使用）**
+
+1. 在 Worker 环境变量中配置固定 Cookie：
+   ```
+   cookie = your-secret-cookie-value-123   # 固定的 Cookie 值
+   ```
+
+2. 在浏览器或客户端中设置 Cookie：
+   - Cookie 名称：`auth_token`
+   - Cookie 值：`your-secret-cookie-value-123`
+   - 即可访问订阅
+
+##### Cookie 验证配置变量
+
+| 变量名 | 说明 | 默认值 | 必需 |
+|--------|------|--------|------|
+| `loginUser` | 登录用户名 | `admin` | 使用动态模式时必需 |
+| `loginPass` | 登录密码 | `password123` | 使用动态模式时必需 |
+| `cookie` | 固定 Cookie 值 | 空 | 使用固定模式时必需 |
+| `cookieSecret` | Cookie 加密密钥 | `your-secret-key-change-this` | 可选 |
+
+##### 未登录访问行为
+
+- 访问订阅页面 `/{UUID}` → 自动重定向到登录页面
+- 访问订阅链接 `/{UUID}/sub` → 返回 401 错误"未授权访问，请先登录"
+
+#### 第八步：访问订阅
 
 部署完成后，访问以下地址：
 
