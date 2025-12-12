@@ -6,9 +6,7 @@ on:
     branches:
       - '**'  # 仅匹配分支推送，排除标签推送
     paths:
-      - '明文源吗'
-    paths-ignore:
-      - 'README.md'
+      - '明文源吗'  # 只有修改此文件才触发，README.md等其他文件不会触发
 
 jobs:
   build-and-obfuscate:
