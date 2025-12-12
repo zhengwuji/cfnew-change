@@ -136,6 +136,10 @@ jobs:
           cp "少年你相信光吗" "_worker.js"
           echo "成功将 '少年你相信光吗' 复制为 '_worker.js'"
           
+          # 创建带.js扩展名的副本用于Release
+          cp "少年你相信光吗" "少年你相信光吗.js"
+          echo "成功创建 '少年你相信光吗.js'"
+          
           # 创建压缩包
           zip Pages.zip _worker.js
           echo "成功创建压缩包 'Pages.zip'"
@@ -182,7 +186,7 @@ jobs:
           files: |
             Pages.zip
             _worker.js
-            少年你相信光吗
+            少年你相信光吗.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
