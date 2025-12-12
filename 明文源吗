@@ -761,6 +761,25 @@ export default {
                     return await handleLoginAuth(request, env);
                 }
 
+                // 调试路径：显示配置信息
+                if (url.pathname === '/debug-login') {
+                    return new Response(JSON.stringify({
+                        message: '登录配置调试信息',
+                        config: {
+                            loginUsername: loginUsername || '未配置',
+                            loginUsernameLength: loginUsername ? loginUsername.length : 0,
+                            loginPasswordLength: loginPassword ? loginPassword.length : 0,
+                            cookieSecretLength: cookieSecret ? cookieSecret.length : 0,
+                            fixedCookieLength: fixedCookie ? fixedCookie.length : 0,
+                            hasLoginUsername: !!loginUsername,
+                            hasLoginPassword: !!loginPassword
+                        }
+                    }, null, 2), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+
                 if (cp && cp.trim()) {
                     const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim() : '/' + cp.trim();
                     const normalizedCustomPath = cleanCustomPath.endsWith('/') && cleanCustomPath.length > 1 ? cleanCustomPath.slice(0, -1) : cleanCustomPath;
