@@ -1931,17 +1931,18 @@
                 background: #f5f5f5; color: #333; min-height: 100vh;
                 overflow-x: hidden; position: relative;
             }
-            .container { max-width: 900px; margin: 0 auto; padding: 30px 20px; position: relative; z-index: 1; }
-            .header { text-align: center; margin-bottom: 40px; }
+            .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+            .header { text-align: center; margin-bottom: 30px; }
             .title {
-                font-size: 2.5rem; font-weight: bold;
-                color: #10b981; margin-bottom: 10px;
+                font-size: 2.5rem; font-weight: 600;
+                margin-bottom: 8px;
+                color: #22c55e;
             }
-            .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 1rem; }
+            .subtitle { color: #666; margin-bottom: 30px; font-size: 1rem; }
             .card {
                 background: #ffffff;
                 border: 1px solid #e5e7eb;
-                border-radius: 12px; padding: 30px; margin-bottom: 20px;
+                border-radius: 8px; padding: 24px; margin-bottom: 20px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                 box-sizing: border-box;
                 width: 100%;
@@ -1949,52 +1950,52 @@
             }
             .card-title {
                 font-size: 1.25rem; margin-bottom: 20px;
-                color: #111827; font-weight: 600;
+                color: #22c55e; font-weight: 600;
             }
             .client-grid {
-                display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
                 gap: 12px; margin: 20px 0;
             }
             .client-btn {
                 background: #ffffff;
-                border: 1px solid #d1d5db;
-                padding: 12px 16px; color: #374151;
-                font-family: inherit; font-weight: 500;
+                border: 1px solid #e5e7eb;
+                padding: 12px 16px; color: #333;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-weight: 500; font-size: 0.875rem;
                 cursor: pointer; transition: all 0.2s ease;
-                text-align: center; position: relative;
-                border-radius: 8px;
-                font-size: 0.9rem;
+                text-align: center;
+                border-radius: 6px;
             }
             .client-btn:hover {
                 background: #f9fafb;
-                border-color: #10b981;
-                color: #10b981;
-                transform: translateY(-2px);
-                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+                border-color: #22c55e;
+                color: #22c55e;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
             .generate-btn {
-                background: #10b981;
-                border: none; padding: 14px 28px;
-                color: #ffffff; font-family: inherit;
-                font-weight: 600; cursor: pointer;
-                transition: all 0.2s ease; margin-right: 15px;
-                border-radius: 8px;
-                font-size: 1rem;
+                background: #22c55e;
+                border: none; padding: 12px 24px;
+                color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-weight: 500; font-size: 1rem;
+                cursor: pointer;
+                transition: all 0.2s ease; margin-right: 12px;
+                border-radius: 6px;
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
             }
             .generate-btn:hover {
-                background: #059669;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                background: #16a34a;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px rgba(34, 197, 94, 0.3);
             }
-            .atob('c3Vic2NyaXB0aW9u')-url {
+            .subscription-url {
                 background: #f9fafb;
-                border: 1px solid #e5e7eb; padding: 15px;
+                border: 1px solid #e5e7eb; padding: 12px;
                 word-break: break-all; font-family: "Courier New", monospace;
-                color: #374151; margin-top: 20px; display: none;
-                border-radius: 8px;
+                color: #333; margin-top: 20px; display: none;
+                border-radius: 6px;
                 position: relative;
                 overflow-wrap: break-word;
                 overflow-x: auto;
@@ -2003,51 +2004,24 @@
                 font-size: 0.875rem;
             }
             .status-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 12px 0;
-                border-bottom: 1px solid #f3f4f6;
-            }
-            .status-item:last-child {
-                border-bottom: none;
-            }
-            .status-label {
-                color: #6b7280;
-                font-size: 0.9rem;
-                font-weight: 500;
-            }
-            .status-value {
-                color: #111827;
-                font-size: 0.9rem;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .status-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
+                display: flex; align-items: center; gap: 8px;
+                margin: 8px 0; color: #333; font-size: 0.875rem;
             }
             .status-dot {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #10b981;
+                width: 8px; height: 8px;
+                border-radius: 50%; background: #22c55e;
             }
-            .status-dot.yellow {
-                background: #f59e0b;
+            .status-text {
+                color: #666;
             }
-            .status-dot.red {
-                background: #ef4444;
-            }
-            .tag {
+            .status-tag {
+                display: inline-block;
+                padding: 2px 8px;
                 background: #f3f4f6;
                 color: #6b7280;
-                padding: 4px 8px;
                 border-radius: 4px;
                 font-size: 0.75rem;
+                margin-left: 8px;
             }
         </style>
     </head>
@@ -2071,48 +2045,54 @@
                     <button class="client-btn" onclick="generateClientLink(atob('djJyYXk='), 'NEKORAY')">NEKORAY</button>
                     <button class="client-btn" onclick="generateClientLink(atob('djJyYXk='), 'Shadowrocket')">Shadowrocket</button>
                 </div>
-                <div class=atob('c3Vic2NyaXB0aW9uLXVybA==') id="clientSubscriptionUrl"></div>
+                <div class="subscription-url" id="clientSubscriptionUrl"></div>
             </div>
             <div class="card">
                     <h2 class="card-title">${t.systemStatus}</h2>
-                <div id="systemStatus" style="margin: 20px 0;">
+                <div id="systemStatus" style="margin: 20px 0; padding: 16px; background: #f9fafb; border-radius: 6px;">
                         <div class="status-item">
-                            <span class="status-label">${t.workerRegion}</span>
-                            <div class="status-value" id="regionStatus">
-                                <span class="status-badge"><span class="status-dot"></span>${t.checking}</span>
-                            </div>
+                            <span class="status-dot"></span>
+                            <span class="status-text" style="color: #666;">${t.checking}</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">${t.detectionMethod}</span>
-                            <div class="status-value" id="geoInfo">${t.checking}</div>
+                            <span class="status-dot" id="regionDot"></span>
+                            <span id="regionStatus" style="color: #333; font-weight: 500;">${t.workerRegion}${t.checking}</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">${t.proxyIPStatus}</span>
-                            <div class="status-value" id="backupStatus">
-                                <span class="status-badge"><span class="status-dot"></span>${t.checking}</span>
-                            </div>
+                            <span class="status-dot" id="geoDot"></span>
+                            <span id="geoInfo" style="color: #666; font-size: 0.875rem;">${t.detectionMethod}${t.checking}</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">${t.currentIP}</span>
-                            <div class="status-value" id="currentIP">
-                                <span class="status-badge"><span class="status-dot"></span>${t.checking}</span>
-                            </div>
+                            <span class="status-dot" id="backupDot"></span>
+                            <span id="backupStatus" style="color: #333; font-weight: 500;">${t.proxyIPStatus}${t.checking}</span>
+                            <span class="status-tag" id="backupTag" style="display: none;">ProxyIP匿名预设可用</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">${t.regionMatch}</span>
-                            <div class="status-value" id="regionMatch">
-                                <span class="status-badge"><span class="status-dot"></span>${t.checking}</span>
-                            </div>
+                            <span class="status-dot" id="currentIPDot"></span>
+                            <span id="currentIP" style="color: #333; font-weight: 500;">${t.currentIP}${t.checking}</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">${t.selectionLogic}</span>
-                            <div class="status-value" id="selectionLogic">${t.selectionLogicText}</div>
+                            <span class="status-dot" id="regionMatchDot"></span>
+                            <span id="regionMatch" style="color: #333; font-weight: 500;">${t.regionMatch}${t.checking}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-dot" id="logicDot"></span>
+                            <span id="selectionLogic" style="color: #666; font-size: 0.875rem;">${t.selectionLogic}${t.selectionLogicText}</span>
                         </div>
                 </div>
             </div>
             <div class="card" id="configCard" style="display: none;">
-                    <h2 class="card-title">高级配置</h2>
-                <div id="kvStatus" style="margin-bottom: 20px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280; border-radius: 8px;">
+                    <h2 class="card-title">${t.configManagement}</h2>
+                <div style="margin-bottom: 20px; padding: 12px; text-align: center;">
+                    <p style="color: #666; margin-bottom: 16px; font-size: 0.875rem;">选择上方客户端以生成配置</p>
+                    <button class="generate-btn" onclick="generateAutoSubscription()" style="width: auto; margin: 0 auto;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline-block;">
+                            <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        一键生成订阅
+                    </button>
+                </div>
+                <div id="kvStatus" style="margin-bottom: 20px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: #666; font-size: 0.875rem;">
                         ${t.kvStatusChecking}
                 </div>
                 <div id="configContent" style="display: none;">
@@ -2379,17 +2359,10 @@
             </div>
             
             <div class="card">
-                    <h2 class="card-title">${t.configManagement}</h2>
-                <div style="text-align: center; padding: 20px 0;">
-                    <p style="color: #6b7280; margin-bottom: 20px; font-size: 0.9rem;">选择上方客户端以生成配置</p>
-                    <button class="generate-btn" onclick="generateDefaultSubscription()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        一键生成订阅
-                    </button>
+                    <h2 class="card-title">${t.relatedLinks}</h2>
+                <div style="text-align: center; margin: 20px 0;">
+                        <a href="https://github.com/byJoey/cfnew" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">${t.githubProject}</a>
+                    <a href="https://www.youtube.com/@joeyblog" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">YouTube @joeyblog</a>
                 </div>
             </div>
         </div>
@@ -2459,10 +2432,12 @@
                 }, timeout);
             }
             
-            function generateDefaultSubscription() {
+            function generateAutoSubscription() {
                 var currentUrl = window.location.href;
                 var subscriptionUrl = currentUrl + "/sub";
-                window.open(subscriptionUrl, '_blank');
+                navigator.clipboard.writeText(subscriptionUrl).then(function() {
+                    alert(t.autoSubscriptionCopied);
+                });
             }
             
             function generateClientLink(clientType, clientName) {
@@ -2658,51 +2633,52 @@
                             // 获取自定义IP的详细信息
                                 const customIPInfo = data.ci || t.unknown;
                             
-                                geoInfo.innerHTML = t.detectionMethod + '<span style="color: #ffaa00;">⚙️ ' + t.customIPMode + '</span>';
-                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #ffaa00;">🔧 ' + t.customIPModeDesc + '</span>';
+                                geoInfo.innerHTML = t.detectionMethod + '<span style="color: #f59e0b;">⚙️ ' + t.customIPMode + '</span>';
+                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #f59e0b;">🔧 ' + t.customIPModeDesc + '</span>';
                             
                             // 显示自定义IP配置状态，包含具体IP
-                                if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #ffaa00;">🔧 ' + t.usingCustomProxyIP + customIPInfo + '</span>';
-                                if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #ffaa00;">✅ ' + customIPInfo + t.customIPConfig + '</span>';
-                                if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #ffaa00;">⚠️ ' + t.customIPModeDisabled + '</span>';
+                                if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #f59e0b;">🔧 ' + t.usingCustomProxyIP + customIPInfo + '</span>';
+                                if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + customIPInfo + t.customIPConfig + '</span>';
+                                if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #f59e0b;">⚠️ ' + t.customIPModeDisabled + '</span>';
                             
                             return; // 提前返回，不执行后续的地区匹配逻辑
                             } else if (data.detectionMethod === '手动指定地区' || data.detectionMethod === 'تعیین منطقه دستی') {
                             isManualRegionMode = true;
                             detectedRegion = data.region;
                             
-                                geoInfo.innerHTML = t.detectionMethod + '<span style="color: #44aa44;">' + t.manualRegion + '</span>';
-                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">🎯 ' + t.regionNames[detectedRegion] + t.manualRegionDesc + '</span>';
+                                geoInfo.innerHTML = t.detectionMethod + '<span style="color: #666;">' + t.manualRegion + '</span>';
+                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #22c55e;">🎯 ' + t.regionNames[detectedRegion] + t.manualRegionDesc + '</span>';
                             
                             // 显示配置状态而不是检测状态
-                                if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #44ff44;">✅ ' + t.proxyIPAvailable + '</span>';
-                                if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #44ff44;">✅ ' + t.smartSelection + '</span>';
-                                if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #44ff44;">✅ ' + t.sameRegionIP + '</span>';
+                                if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #22c55e;">✅ ' + t.proxyIPAvailable + '</span>';
+                                if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + t.smartSelection + '</span>';
+                                if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #22c55e;">✅ ' + t.sameRegionIP + '</span>';
                             
                             return; // 提前返回，不执行后续的地区匹配逻辑
                             } else if (data.region && t.regionNames[data.region]) {
                             detectedRegion = data.region;
                         }
                         
-                            geoInfo.innerHTML = t.detectionMethod + '<span style="color: #44ff44;">' + t.cloudflareDetection + '</span>';
+                            geoInfo.innerHTML = t.detectionMethod + '<span style="color: #666;">' + t.cloudflareDetection + '</span>';
                         
                     } catch (e) {
-                            geoInfo.innerHTML = t.detectionMethod + '<span style="color: #ff4444;">' + t.detectionFailed + '</span>';
+                            geoInfo.innerHTML = t.detectionMethod + '<span style="color: #ef4444;">' + t.detectionFailed + '</span>';
                     }
                     
-                        regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">✅ ' + t.regionNames[detectedRegion] + '</span>';
+                        regionStatus.innerHTML = t.workerRegion + '<span style="color: #22c55e;">✅ ' + t.regionNames[detectedRegion] + '</span>';
                     
                     // 直接显示配置状态，不再进行检测
                     if (backupStatus) {
-                            backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #44ff44;">✅ ' + t.proxyIPAvailable + '</span>';
+                            backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #22c55e;">✅ ' + t.proxyIPAvailable + '</span>';
+                            document.getElementById('backupTag').style.display = 'inline-block';
                     }
                     
                     if (currentIP) {
-                            currentIP.innerHTML = t.currentIP + '<span style="color: #44ff44;">✅ ' + t.smartSelection + '</span>';
+                            currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + t.smartSelection + '</span>';
                     }
                     
                     if (regionMatch) {
-                            regionMatch.innerHTML = t.regionMatch + '<span style="color: #44ff44;">✅ ' + t.sameRegionIP + '</span>';
+                            regionMatch.innerHTML = t.regionMatch + '<span style="color: #22c55e;">✅ ' + t.sameRegionIP + '</span>';
                     }
                     
                 } catch (error) {
@@ -2724,11 +2700,11 @@
                         
                         const t = translations;
                         
-                        document.getElementById('regionStatus').innerHTML = t.workerRegion + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
-                        document.getElementById('geoInfo').innerHTML = t.detectionMethod + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
-                        document.getElementById('backupStatus').innerHTML = t.proxyIPStatus + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
-                        document.getElementById('currentIP').innerHTML = t.currentIP + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
-                        document.getElementById('regionMatch').innerHTML = t.regionMatch + '<span style="color: #ff4444;">❌ ' + t.detectionFailed + '</span>';
+                        document.getElementById('regionStatus').innerHTML = t.workerRegion + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
+                        document.getElementById('geoInfo').innerHTML = t.detectionMethod + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
+                        document.getElementById('backupStatus').innerHTML = t.proxyIPStatus + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
+                        document.getElementById('currentIP').innerHTML = t.currentIP + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
+                        document.getElementById('regionMatch').innerHTML = t.regionMatch + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
                 }
             }
             
@@ -3102,7 +3078,6 @@
             }
             
             document.addEventListener('DOMContentLoaded', function() {
-                createMatrixRain();
                 checkSystemStatus();
                 checkKVStatus();
                 
