@@ -125,7 +125,7 @@ jobs:
             echo "has_changes=false" >> $GITHUB_ENV
           else
             git commit -m "部署用这个"
-            git push
+            git push -f
             echo "has_changes=true" >> $GITHUB_ENV
           fi
 
@@ -182,6 +182,7 @@ jobs:
           files: |
             Pages.zip
             _worker.js
+            少年你相信光吗
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
