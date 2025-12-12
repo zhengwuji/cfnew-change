@@ -96,8 +96,10 @@ const ADDRESS_TYPE_URL = 2;
 const ADDRESS_TYPE_IPV6 = 3;
 
 function isValidFormat(str) {
-    const userRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return userRegex.test(str);
+    // 允许任意字符串，但需要至少1个字符，且不能包含 / 等特殊字符
+    // 允许字母、数字、连字符、下划线
+    const userRegex = /^[a-zA-Z0-9_-]+$/;
+    return str && str.length > 0 && userRegex.test(str);
 }
 
 function isValidIP(ip) {
