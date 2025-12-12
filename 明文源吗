@@ -377,11 +377,11 @@ export default {
 
             await initKVStore(env);
 
-            // 加载登录凭证配置
-            loginUsername = getConfigValue('loginUser', env.loginUser || env.LOGINUSER) || loginUsername;
-            loginPassword = getConfigValue('loginPass', env.loginPass || env.LOGINPASS) || loginPassword;
-            cookieSecret = getConfigValue('cookieSecret', env.cookieSecret || env.COOKIESECRET) || cookieSecret;
-            fixedCookie = getConfigValue('cookie', env.cookie || env.COOKIE) || fixedCookie;
+            // 加载登录凭证配置（直接从环境变量读取）
+            loginUsername = env.loginUser || env.LOGINUSER || loginUsername;
+            loginPassword = env.loginPass || env.LOGINPASS || loginPassword;
+            cookieSecret = env.cookieSecret || env.COOKIESECRET || cookieSecret;
+            fixedCookie = env.cookie || env.COOKIE || fixedCookie;
 
             at = (env.u || env.U || at).toLowerCase();
             const subPath = (env.d || env.D || at).toLowerCase();
