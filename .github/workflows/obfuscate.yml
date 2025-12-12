@@ -88,6 +88,33 @@ jobs:
           EOF
           node obfuscate.js
 
+      - name: Get commit information
+        id: commit_info
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+          COMMIT_DATE=$(git log -1 --pretty=%cd --date=format:'%Y-%m-%d %H:%M:%S')
+          UPDATE_DATE=$(date +'%Y-%m-%d %H:%M:%S')
+          VERSION=$(date +'v%Y%m%d-%H%M%S')
+          
+          echo "commit_msg<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+          echo "commit_date=$COMMIT_DATE" >> $GITHUB_OUTPUT
+          echo "update_date=$UPDATE_DATE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          echo "提交信息: $COMMIT_MSG"
+          echo "提交SHA: $COMMIT_SHA"
+          echo "提交作者: $COMMIT_AUTHOR"
+          echo "提交日期: $COMMIT_DATE"
+          echo "更新日期: $UPDATE_DATE"
+          echo "版本号: $VERSION"
+
       - name: Commit and push the obfuscated file
         run: |
           git config --global user.name 'GitHub Actions Bot'
@@ -95,7 +122,84 @@ jobs:
           git add '少年你相信光吗'
           if git diff --staged --quiet; then
             echo "No changes to commit, the obfuscated file is already up-to-date."
+            echo "has_changes=false" >> $GITHUB_ENV
           else
             git commit -m "部署用这个"
             git push
+            echo "has_changes=true" >> $GITHUB_ENV
           fi
+
+      - name: Prepare release files
+        if: env.has_changes == 'true'
+        run: |
+          # 复制混淆后的文件
+          cp "少年你相信光吗" "_worker.js"
+          echo "成功将 '少年你相信光吗' 复制为 '_worker.js'"
+          
+          # 创建压缩包
+          zip Pages.zip _worker.js
+          echo "成功创建压缩包 'Pages.zip'"
+
+      - name: Create GitHub Release
+        if: env.has_changes == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.commit_info.outputs.version }}
+          name: 构建版本 ${{ steps.commit_info.outputs.version }}
+          body: |
+            ## 📦 构建信息
+            
+            - **版本号**: ${{ steps.commit_info.outputs.version }}
+            - **更新日期**: ${{ steps.commit_info.outputs.update_date }}
+            - **提交日期**: ${{ steps.commit_info.outputs.commit_date }}
+            - **提交SHA**: ${{ steps.commit_info.outputs.commit_sha }}
+            - **提交作者**: ${{ steps.commit_info.outputs.commit_author }}
+            
+            ## 📝 更新日志
+            
+            ```
+            ${{ steps.commit_info.outputs.commit_msg }}
+            ```
+            
+            ## 📄 文件说明
+            
+            - **源文件**: 明文源吗
+            - **混淆文件**: 少年你相信光吗
+            - **部署文件**: _worker.js
+            - **压缩包**: Pages.zip
+            
+            ## 🚀 使用方法
+            
+            1. 下载 `Pages.zip` 压缩包
+            2. 解压后得到 `_worker.js` 文件
+            3. 在 Cloudflare Pages 中上传 `_worker.js` 文件进行部署
+            
+            ---
+            
+            **自动构建时间**: ${{ steps.commit_info.outputs.update_date }}
+          draft: false
+          prerelease: false
+          files: |
+            Pages.zip
+            _worker.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output summary
+        if: env.has_changes == 'true'
+        run: |
+          echo "## ✅ 构建完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 构建信息" >> $GITHUB_STEP_SUMMARY
+          echo "- **版本号**: ${{ steps.commit_info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **更新日期**: ${{ steps.commit_info.outputs.update_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **提交信息**: ${{ steps.commit_info.outputs.commit_msg }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **提交SHA**: ${{ steps.commit_info.outputs.commit_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📄 生成文件" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 少年你相信光吗 (混淆后的代码)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ _worker.js (部署文件)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Pages.zip (压缩包)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 GitHub Release" >> $GITHUB_STEP_SUMMARY
+          echo "✅ 已自动创建 Release: ${{ steps.commit_info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
