@@ -1889,33 +1889,34 @@
                     terminal: '终端 v2.7',
                     githubProject: 'GitHub 项目',
                     autoDetectClient: '自动识别',
-                selectionLogicText: '同地区 → 邻近地区 → 其他地区',
-                customIPDisabledHint: '使用自定义ProxyIP时，地区选择已禁用',
-                customIPMode: '自定义ProxyIP模式 (p变量启用)',
-                customIPModeDesc: '自定义IP模式 (已禁用地区匹配)',
-                usingCustomProxyIP: '使用自定义ProxyIP: ',
-                customIPConfig: ' (p变量配置)',
-                customIPModeDisabled: '自定义IP模式，地区选择已禁用',
-                manualRegion: '手动指定地区',
-                manualRegionDesc: ' (手动指定)',
-                proxyIPAvailable: '10/10 可用 (ProxyIP域名预设可用)',
-                smartSelection: '智能就近选择中',
-                sameRegionIP: '同地区IP可用 (1个)',
-                cloudflareDetection: 'Cloudflare内置检测',
-                detectionFailed: '检测失败',
-                apiTestResult: 'API检测结果: ',
-                apiTestTime: '检测时间: ',
-                apiTestFailed: 'API检测失败: ',
-                unknownError: '未知错误',
-                apiTestError: 'API测试失败: ',
-                kvNotConfigured: 'KV存储未配置，无法使用配置管理功能。\\n\\n请在Cloudflare Workers中:\\n1. 创建KV命名空间\\n2. 绑定环境变量 C\\n3. 重新部署代码',
-                kvNotEnabled: 'KV存储未配置',
-                kvCheckFailed: 'KV存储检测失败: 响应格式错误',
-                kvCheckFailedStatus: 'KV存储检测失败 - 状态码: ',
-                kvCheckFailedError: 'KV存储检测失败 - 错误: '
-            };
+                    selectionLogicText: '同地区 → 邻近地区 → 其他地区',
+                    customIPDisabledHint: '使用自定义ProxyIP时，地区选择已禁用',
+                    customIPMode: '自定义ProxyIP模式 (p变量启用)',
+                    customIPModeDesc: '自定义IP模式 (已禁用地区匹配)',
+                    usingCustomProxyIP: '使用自定义ProxyIP: ',
+                    customIPConfig: ' (p变量配置)',
+                    customIPModeDisabled: '自定义IP模式，地区选择已禁用',
+                    manualRegion: '手动指定地区',
+                    manualRegionDesc: ' (手动指定)',
+                    proxyIPAvailable: '10/10 可用 (ProxyIP域名预设可用)',
+                    smartSelection: '智能就近选择中',
+                    sameRegionIP: '同地区IP可用 (1个)',
+                    cloudflareDetection: 'Cloudflare内置检测',
+                    detectionFailed: '检测失败',
+                    apiTestResult: 'API检测结果: ',
+                    apiTestTime: '检测时间: ',
+                    apiTestFailed: 'API检测失败: ',
+                    unknownError: '未知错误',
+                    apiTestError: 'API测试失败: ',
+                    kvNotConfigured: 'KV存储未配置，无法使用配置管理功能。\\n\\n请在Cloudflare Workers中:\\n1. 创建KV命名空间\\n2. 绑定环境变量 C\\n3. 重新部署代码',
+                    kvNotEnabled: 'KV存储未配置',
+                    kvCheckFailed: 'KV存储检测失败: 响应格式错误',
+                    kvCheckFailedStatus: 'KV存储检测失败 - 状态码: ',
+                    kvCheckFailedError: 'KV存储检测失败 - 错误: '
+                }
+        };
             
-            const t = translations;
+            const t = translations.zh;
         
         const pageHtml = `<!DOCTYPE html>
         <html lang="zh-CN" dir="ltr">
