@@ -6,7 +6,7 @@ on:
     branches:
       - '**'  # 仅匹配分支推送，排除标签推送
     paths:
-      - '明文源吗'  # 只有修改此文件才触发，README.md等其他文件不会触发
+      - '明文源吗'
 
 jobs:
   build-and-obfuscate:
@@ -54,30 +54,30 @@ jobs:
               deadCodeInjection: false,
               stringArray: true,
               stringArrayEncoding: ['base64'],
-              stringArrayThreshold: 0.8,
+              stringArrayThreshold: 1.0,
               stringArrayRotate: true,
               stringArrayShuffle: true,
-              stringArrayWrappersCount: 1,
+              stringArrayWrappersCount: 2,
               stringArrayWrappersChainedCalls: false,
-              stringArrayWrappersParametersMaxCount: 2,
-              renameGlobals: false,
-              identifierNamesGenerator: 'hexadecimal',
+              stringArrayWrappersParametersMaxCount: 3,
+              renameGlobals: true,
+              identifierNamesGenerator: 'mangled-shuffled',
               identifierNamesCache: null,
               identifiersPrefix: '',
               renameProperties: false,
               renamePropertiesMode: 'safe',
-              ignoreImports: true,
+              ignoreImports: false,
               target: 'browser',
               numbersToExpressions: false,
-              simplify: true,
-              splitStrings: false,
-              splitStringsChunkLength: 10,
+              simplify: false,
+              splitStrings: true,
+              splitStringsChunkLength: 1,
               transformObjectKeys: false,
-              unicodeEscapeSequence: false,
+              unicodeEscapeSequence: true,
               selfDefending: false,
               debugProtection: false,
               debugProtectionInterval: 0,
-              disableConsoleOutput: false,
+              disableConsoleOutput: true,
               domainLock: []
           };
 
@@ -97,5 +97,5 @@ jobs:
             echo "No changes to commit, the obfuscated file is already up-to-date."
           else
             git commit -m "部署用这个"
-            git push --force origin HEAD
+            git push
           fi
