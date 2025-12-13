@@ -1930,6 +1930,22 @@
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                 background: #f5f5f5; color: #333; min-height: 100vh;
                 overflow-x: hidden; position: relative;
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                transition: background-image 0.5s ease-in-out;
+            }
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(245, 245, 245, 0.85);
+                z-index: 0;
+                pointer-events: none;
             }
             .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
             .header { text-align: center; margin-bottom: 30px; }
@@ -2044,9 +2060,56 @@
                 border-color: #22c55e !important;
                 box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
             }
+            .bg-switcher {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 12px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                min-width: 200px;
+            }
+            .bg-switcher-title {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #22c55e;
+                margin-bottom: 8px;
+            }
+            .bg-switcher-info {
+                font-size: 0.75rem;
+                color: #666;
+                margin-bottom: 8px;
+                padding: 6px;
+                background: #f9fafb;
+                border-radius: 4px;
+            }
+            .bg-switcher-btn {
+                background: #22c55e;
+                border: none;
+                padding: 8px 16px;
+                color: #ffffff;
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                border-radius: 6px;
+                width: 100%;
+                transition: all 0.2s ease;
+            }
+            .bg-switcher-btn:hover {
+                background: #16a34a;
+                transform: translateY(-1px);
+            }
         </style>
     </head>
     <body>
+        <div class="bg-switcher">
+            <div class="bg-switcher-title">🎨 背景切换</div>
+            <div class="bg-switcher-info" id="bgInfo">番号: -</div>
+            <button class="bg-switcher-btn" onclick="changeBackground()">更换背景</button>
+        </div>
         <div class="container">
             <div class="header">
                     <h1 class="title">${t.title}</h1>
@@ -2392,6 +2455,85 @@
             var SUB_CONVERTER_URL = "${ scu }";
             // 远程配置URL（硬编码）
             var REMOTE_CONFIG_URL = "${ remoteConfigUrl }";
+            
+            // 背景图片数据（高清女优背景，包含番号）
+            // 注意：请将下面的URL替换为您实际的高清女优图片URL
+            // 格式：{ url: '图片URL', code: '番号' }
+            const backgroundImages = [
+                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-001' },
+                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-002' },
+                { url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=100', code: 'SSIS-003' },
+                { url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1920&q=100', code: 'SSIS-004' },
+                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-005' },
+                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-006' },
+                { url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=100', code: 'SSIS-007' },
+                { url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1920&q=100', code: 'SSIS-008' },
+                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-009' },
+                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-010' }
+                // 您可以在这里添加更多背景图片
+                // 例如：{ url: 'https://your-image-url.com/image.jpg', code: 'SSIS-011' },
+            ];
+            
+            // 当前背景索引
+            let currentBgIndex = -1;
+            
+            // 从localStorage加载保存的背景索引
+            function loadBackgroundIndex() {
+                const saved = localStorage.getItem('bgIndex');
+                if (saved !== null) {
+                    currentBgIndex = parseInt(saved);
+                }
+            }
+            
+            // 保存背景索引到localStorage
+            function saveBackgroundIndex(index) {
+                localStorage.setItem('bgIndex', index);
+            }
+            
+            // 切换背景
+            function changeBackground() {
+                // 随机选择一个新的背景（确保不重复）
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * backgroundImages.length);
+                } while (newIndex === currentBgIndex && backgroundImages.length > 1);
+                
+                currentBgIndex = newIndex;
+                const bgData = backgroundImages[currentBgIndex];
+                
+                // 设置背景图片
+                document.body.style.backgroundImage = 'url(' + bgData.url + ')';
+                
+                // 更新番号信息
+                const bgInfo = document.getElementById('bgInfo');
+                if (bgInfo) {
+                    bgInfo.textContent = '番号: ' + bgData.code;
+                }
+                
+                // 保存到localStorage
+                saveBackgroundIndex(currentBgIndex);
+            }
+            
+            // 初始化背景
+            function initBackground() {
+                loadBackgroundIndex();
+                if (currentBgIndex >= 0 && currentBgIndex < backgroundImages.length) {
+                    const bgData = backgroundImages[currentBgIndex];
+                    document.body.style.backgroundImage = 'url(' + bgData.url + ')';
+                    const bgInfo = document.getElementById('bgInfo');
+                    if (bgInfo) {
+                        bgInfo.textContent = '番号: ' + bgData.code;
+                    }
+                } else {
+                    // 如果没有保存的背景，随机选择一个
+                    changeBackground();
+                }
+            }
+            
+            // 页面加载时初始化背景
+            window.addEventListener('DOMContentLoaded', function() {
+                initBackground();
+            });
                 
                 // 翻译对象
                 const translations = {
@@ -2455,15 +2597,29 @@
             
             function generateAutoSubscription() {
                 var currentUrl = window.location.href;
-                var subscriptionUrl = currentUrl + "/sub";
+                // 确保URL以/结尾或包含路径，然后添加/sub
+                var baseUrl = currentUrl.endsWith('/') ? currentUrl.slice(0, -1) : currentUrl;
+                var subscriptionUrl = baseUrl + "/sub";
                 navigator.clipboard.writeText(subscriptionUrl).then(function() {
                     alert(t.autoSubscriptionCopied);
+                }).catch(function(err) {
+                    // 如果复制失败，显示链接让用户手动复制
+                    var urlElement = document.getElementById("clientSubscriptionUrl");
+                    if (urlElement) {
+                        urlElement.textContent = subscriptionUrl;
+                        urlElement.style.display = "block";
+                        alert("订阅链接: " + subscriptionUrl + "\\n\\n请手动复制");
+                    } else {
+                        alert("订阅链接: " + subscriptionUrl);
+                    }
                 });
             }
             
             function generateClientLink(clientType, clientName) {
                 var currentUrl = window.location.href;
-                var subscriptionUrl = currentUrl + "/sub";
+                // 确保URL以/结尾或包含路径，然后添加/sub
+                var baseUrl = currentUrl.endsWith('/') ? currentUrl.slice(0, -1) : currentUrl;
+                var subscriptionUrl = baseUrl + "/sub";
                 var schemeUrl = '';
                 var displayName = clientName || '';
                 var finalUrl = subscriptionUrl;
