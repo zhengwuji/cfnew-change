@@ -1552,18 +1552,19 @@
     }
 
     async function handleWsRequest(request) {
-        // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
-        if (!currentWorkerRegion || currentWorkerRegion === '') {
-            if (manualWorkerRegion && manualWorkerRegion.trim()) {
-                currentWorkerRegion = manualWorkerRegion.trim().toUpperCase();
-            } else {
-                currentWorkerRegion = await detectWorkerRegion(request);
+        try {
+            // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
+            if (!currentWorkerRegion || currentWorkerRegion === '') {
+                if (manualWorkerRegion && manualWorkerRegion.trim()) {
+                    currentWorkerRegion = manualWorkerRegion.trim().toUpperCase();
+                } else {
+                    currentWorkerRegion = await detectWorkerRegion(request);
+                }
             }
-        }
-        
-        const wsPair = new WebSocketPair();
-        const [clientSock, serverSock] = Object.values(wsPair);
-        serverSock.accept();
+            
+            const wsPair = new WebSocketPair();
+            const [clientSock, serverSock] = Object.values(wsPair);
+            serverSock.accept();
 
         let remoteConnWrapper = { socket: null };
         let isDnsQuery = false;
