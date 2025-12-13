@@ -1,7 +1,10 @@
 import { connect } from 'cloudflare:sockets';
 
-let at = '9ac70987-feda-4925-83a2-9f3328c28f4a';
-let envUKey = ''; // 保存原始环境变量u的值（支持大小写）
+// 默认VLESS协议UUID（必须是标准格式：8-4-4-4-12）
+const defaultUUID = '9ac70987-feda-4925-83a2-9f3328c28f4a';
+let at = defaultUUID;  // VLESS协议认证用的UUID
+let vlessUUID = defaultUUID;  // 用于生成VLESS链接的UUID
+let envUKey = ''; // 保存原始环境变量u的值，用于订阅路径验证
 let fallbackAddress = '';
 let fallbackPort = '443';
 let socks5Config = '';
@@ -307,10 +310,22 @@ export default {
 
             await initKVStore(env);
 
-            // 保存原始环境变量u的值（支持大小写）
-            envUKey = (env.u || env.U || at);
-            at = envUKey.toLowerCase();
-            const subPath = (env.d || env.D || at).toLowerCase();
+            // 保存原始环境变量u的值（支持大小写），用于订阅路径验证
+            envUKey = (env.u || env.U || defaultUUID);
+
+            // 检查是否设置了自定义UUID（用于VLESS协议）
+            const customUUID = getConfigValue('uuid', env.uuid || env.UUID);
+            if (customUUID && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(customUUID)) {
+                // 如果设置了有效的自定义UUID，使用它
+                at = customUUID.toLowerCase();
+                vlessUUID = customUUID.toLowerCase();
+            } else {
+                // 否则使用默认UUID
+                at = defaultUUID.toLowerCase();
+                vlessUUID = defaultUUID.toLowerCase();
+            }
+
+            const subPath = (env.d || env.D || envUKey).toLowerCase();
 
             const ci = getConfigValue('p', env.p || env.P);
             let useCustomIP = false;
@@ -1394,7 +1409,7 @@ function generateLinksFromSource(list, user, workerDomain) {
                     host: workerDomain,
                     path: wsPath
                 });
-                links.push(`${proto}://${user}@${safeIP}:${port}?${wsParams.toString()}#${encodeURIComponent(wsNodeName)}`);
+                links.push(`${proto}://${vlessUUID}@${safeIP}:${port}?${wsParams.toString()}#${encodeURIComponent(wsNodeName)}`);
             } else {
 
                 const wsNodeName = `${nodeNameBase}-${port}-WS`;
@@ -1405,7 +1420,7 @@ function generateLinksFromSource(list, user, workerDomain) {
                     host: workerDomain,
                     path: wsPath
                 });
-                links.push(`${proto}://${user}@${safeIP}:${port}?${wsParams.toString()}#${encodeURIComponent(wsNodeName)}`);
+                links.push(`${proto}://${vlessUUID}@${safeIP}:${port}?${wsParams.toString()}#${encodeURIComponent(wsNodeName)}`);
             }
         });
     });
@@ -4692,7 +4707,7 @@ function generateLinksFromNewIPs(list, user, workerDomain) {
         } else {
 
             const wsNodeName = `${nodeName}-${port}-WS-TLS`;
-            const link = `${proto}://${user}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
+            const link = `${proto}://${vlessUUID}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
             links.push(link);
         }
     });
@@ -4701,7 +4716,7 @@ function generateLinksFromNewIPs(list, user, workerDomain) {
 
 function generateXhttpLinksFromSource(list, user, workerDomain) {
     const links = [];
-    const nodePath = user.substring(0, 8);
+    const nodePath = vlessUUID.substring(0, 8);
 
     list.forEach(item => {
         let nodeNameBase = item.isp.replace(/\s/g, '_');
@@ -4724,7 +4739,7 @@ function generateXhttpLinksFromSource(list, user, workerDomain) {
             mode: 'stream-one'
         });
 
-        links.push(`vless://${user}@${safeIP}:${port}?${params.toString()}#${encodeURIComponent(wsNodeName)}`);
+        links.push(`vless://${vlessUUID}@${safeIP}:${port}?${params.toString()}#${encodeURIComponent(wsNodeName)}`);
     });
 
     return links;
