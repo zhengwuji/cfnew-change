@@ -709,6 +709,217 @@ export default {
                     }
                 }
 
+                // 背景切换页面路由
+                if (url.pathname === '/background' || url.pathname === '/background/') {
+                    const backgroundHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景切换</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #backgroundImage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            transition: opacity 0.5s ease;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%);
+            z-index: -1;
+        }
+        
+        .bg-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            min-width: 250px;
+            z-index: 1000;
+        }
+        
+        .bg-switcher-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        
+        .bg-switcher-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .bg-switcher-info:hover {
+            background: #e8e8e8;
+            transform: translateY(-2px);
+        }
+        
+        .bg-switcher-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .bg-switcher-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .bg-switcher-btn:active {
+            transform: translateY(0);
+        }
+        
+        .bg-switcher-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: none;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <img id="backgroundImage" src="" alt="背景图">
+    <div class="overlay"></div>
+    
+    <div class="bg-switcher">
+        <div class="bg-switcher-title">🎨 背景切换</div>
+        <div class="bg-switcher-info" id="bgInfo" onclick="openVideoLink()">
+            <div>番号: <span id="videoCode">加载中...</span></div>
+        </div>
+        <button class="bg-switcher-btn" id="changeBtn" onclick="changeBackground()">更换背景</button>
+    </div>
+    
+    <div class="loading" id="loading">正在加载...</div>
+    
+    <script>
+        let currentVideoData = null;
+        
+        // 页面加载时获取初始背景
+        window.addEventListener('DOMContentLoaded', function() {
+            changeBackground();
+        });
+        
+        // 更换背景函数
+        async function changeBackground() {
+            const btn = document.getElementById('changeBtn');
+            const loading = document.getElementById('loading');
+            const bgImg = document.getElementById('backgroundImage');
+            const codeEl = document.getElementById('videoCode');
+            
+            // 禁用按钮
+            btn.disabled = true;
+            loading.style.display = 'block';
+            
+            try {
+                // 调用API获取随机视频
+                const response = await fetch('/api/random-video');
+                const data = await response.json();
+                
+                if (data.success || data.code) {
+                    currentVideoData = data;
+                    
+                    // 更新背景图
+                    bgImg.style.opacity = '0';
+                    setTimeout(() => {
+                        bgImg.src = data.cover;
+                        bgImg.onload = () => {
+                            bgImg.style.opacity = '1';
+                        };
+                    }, 300);
+                    
+                    // 更新番号显示
+                    codeEl.textContent = data.code;
+                } else {
+                    throw new Error(data.error || '获取失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                codeEl.textContent = '获取失败';
+                alert('获取背景失败: ' + error.message);
+            } finally {
+                // 恢复按钮
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // 点击番号打开链接
+        function openVideoLink() {
+            if (currentVideoData && currentVideoData.link) {
+                window.open(currentVideoData.link, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>`;
+                    
+                    return new Response(backgroundHTML, {
+                        status: 200,
+                        headers: { 
+                            'Content-Type': 'text/html; charset=utf-8',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                }
+
                 if (url.pathname === '/') {
                     // 检查是否有自定义首页URL配置
                     const customHomepage = getConfigValue('homepage', env.homepage || env.HOMEPAGE);
