@@ -878,16 +878,25 @@ export default {
                 // 更新UI
                 bgImg.style.opacity = '0';
                 setTimeout(function() {
-                    bgImg.src = data.cover;
-                    bgImg.onload = function() {
+                    // 检查是否为CSS渐变
+                    if (data.cover && data.cover.startsWith('CSS_GRADIENT:')) {
+                        const gradient = data.cover.replace('CSS_GRADIENT:', '');
+                        bgImg.style.background = gradient;
+                        bgImg.src = '';  // 清空src
                         bgImg.style.opacity = '1';
-                    };
-                    bgImg.onerror = function() {
-                        // 如果图片加载失败，尝试降级URL
-                        const codeForUrl = data.code.toLowerCase().replace('-', '');
-                        bgImg.src = 'https://pics.dmm.co.jp/digital/video/' + codeForUrl + '/' + codeForUrl + 'pl.jpg';
-                        bgImg.style.opacity = '1';
-                    };
+                    } else {
+                        bgImg.style.background = '';
+                        bgImg.src = data.cover;
+                        bgImg.onload = function() {
+                            bgImg.style.opacity = '1';
+                        };
+                        bgImg.onerror = function() {
+                            // 降级到纯色背景
+                            bgImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                            bgImg.src = '';
+                            bgImg.style.opacity = '1';
+                        };
+                    }
                 }, 300);
                 
                 codeEl.textContent = data.code;
@@ -895,7 +904,8 @@ export default {
             } catch (error) {
                 console.error('Error:', error);
                 codeEl.textContent = 'SSIS-002';
-                bgImg.src = 'https://pics.dmm.co.jp/digital/video/ssis00002/ssis00002pl.jpg';
+                bgImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                bgImg.src = '';
             } finally {
                 btn.disabled = false;
                 loading.style.display = 'none';
@@ -1776,7 +1786,7 @@ async function fetchDynamicIPs() {
     return [];
 }
 
-// 生成随机番号和占位图背景
+// 生成随机番号和CSS渐变背景
 async function fetchRandomJavdbVideo() {
     // 预定义的番号列表
     const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
@@ -1807,24 +1817,28 @@ async function fetchRandomJavdbVideo() {
         // 忽略错误
     }
 
-    // 使用占位图服务（渐变背景+番号文字）
+    // CSS渐变背景（不依赖外部图片）
     const gradients = [
-        '1a1a2e/16213e',  // 深蓝
-        '0f2027/203a43',  // 深青
-        '141e30/243b55',  // 靛蓝
-        '1f1c2c/928dab',  // 紫灰
-        '2c3e50/3498db'   // 蓝调
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+        'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+        'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+        'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
     ];
     const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-    const placeholderUrl = 'https://via.placeholder.com/1200x800/' + randomGradient + '?text=' + encodeURIComponent(code);
 
     return {
         success: true,
         code: code,
-        cover: placeholderUrl,
+        cover: 'CSS_GRADIENT:' + randomGradient,  // 特殊标记，前端识别后用CSS设置
         title: code,
         link: detailLink,
-        source: 'placeholder'
+        source: 'css-gradient'
     };
 }
 
