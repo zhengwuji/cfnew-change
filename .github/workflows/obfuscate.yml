@@ -224,7 +224,11 @@ jobs:
         run: |
           WORKSPACE=$(pwd)
           OBFUSCATED_FILE="少年你相信光吗"
-          RELEASE_FILE="少年你相信光吗.txt"
+          
+          # 获取短提交哈希
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          RELEASE_FILE="${SHORT_SHA}-少年你相信光吗.txt"
+          DEFAULT_FILE="${SHORT_SHA}-default.txt"
           
           if [ ! -f "$OBFUSCATED_FILE" ]; then
             echo "错误：混淆文件不存在"
@@ -232,15 +236,22 @@ jobs:
             exit 1
           fi
           
-          FILE_SIZE=$(wc -c < "$OBFUSCATED_FILE" || stat -c%s "$OBFUSCATED_FILE" 2>/dev/null || stat -f%z "$OBFUSCATED_FILE" 2>/dev/null || echo "unknown")
+          FILE_SIZE=$(wc -c <"$OBFUSCATED_FILE" || stat -c%s "$OBFUSCATED_FILE" 2>/dev/null || stat -f%z "$OBFUSCATED_FILE" 2>/dev/null || echo "unknown")
           echo "混淆文件大小: $FILE_SIZE 字节"
           echo "文件路径: $WORKSPACE/$OBFUSCATED_FILE"
           
+          # 创建两个版本的文件
           cp "$OBFUSCATED_FILE" "$RELEASE_FILE"
+          cp "$OBFUSCATED_FILE" "$DEFAULT_FILE"
           
-          TXT_SIZE=$(wc -c < "$RELEASE_FILE" || stat -c%s "$RELEASE_FILE" 2>/dev/null || stat -f%z "$RELEASE_FILE" 2>/dev/null || echo "unknown")
+          echo "release_file=$RELEASE_FILE" >> $GITHUB_ENV
+          echo "default_file=$DEFAULT_FILE" >> $GITHUB_ENV
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_ENV
+          
+          TXT_SIZE=$(wc -c <"$RELEASE_FILE" || stat -c%s "$RELEASE_FILE" 2>/dev/null || stat -f%z "$RELEASE_FILE" 2>/dev/null || echo "unknown")
           echo "txt文件大小: $TXT_SIZE 字节"
-          echo "Release文件路径: $WORKSPACE/$RELEASE_FILE"
+          echo "Release文件: $RELEASE_FILE"
+          echo "Default文件: $DEFAULT_FILE"
           
           if [ ! -f "$RELEASE_FILE" ]; then
             echo "错误：Release文件创建失败"
@@ -248,7 +259,7 @@ jobs:
           fi
           
           echo "文件大小验证通过"
-          ls -lh "$RELEASE_FILE" || echo "文件列表失败"
+          ls -lh "$RELEASE_FILE" "$DEFAULT_FILE" || echo "文件列表失败"
 
       - name: Commit and force push the obfuscated file
         env:
@@ -277,19 +288,28 @@ jobs:
 
       - name: Verify release file before upload
         run: |
-          RELEASE_FILE="少年你相信光吗.txt"
+          RELEASE_FILE="${{ env.release_file }}"
+          DEFAULT_FILE="${{ env.default_file }}"
+          
           if [ ! -f "$RELEASE_FILE" ]; then
             echo "错误：Release 文件不存在"
             ls -la
             exit 1
           fi
-          FILE_SIZE=$(wc -c < "$RELEASE_FILE" || stat -c%s "$RELEASE_FILE" 2>/dev/null || stat -f%z "$RELEASE_FILE" 2>/dev/null || echo "unknown")
+          
+          if [ ! -f "$DEFAULT_FILE" ]; then
+            echo "错误：Default 文件不存在"
+            ls -la
+            exit 1
+          fi
+          
+          FILE_SIZE=$(wc -c <"$RELEASE_FILE" || stat -c%s "$RELEASE_FILE" 2>/dev/null || stat -f%z "$RELEASE_FILE" 2>/dev/null || echo "unknown")
           echo "准备上传的文件: $RELEASE_FILE"
           echo "文件大小: $FILE_SIZE 字节 ($(($FILE_SIZE / 1024)) KB)"
           if [ "$FILE_SIZE" -lt 1000000 ]; then
             echo "警告：文件大小异常小，可能有问题"
           fi
-          ls -lh "$RELEASE_FILE"
+          ls -lh "$RELEASE_FILE" "$DEFAULT_FILE"
           pwd
           file "$RELEASE_FILE" || echo "文件类型检查失败"
 
@@ -310,12 +330,14 @@ jobs:
             ### 构建信息
             - 构建时间: ${{ steps.build-info.outputs.build_date }}
             - 构建分支: ${{ github.ref_name }}
-            - 提交哈希: ${{ github.sha }}
+            - 提交哈希: ${{ env.short_sha }} (完整: ${{ github.sha }})
             
             ### 文件说明
-            - **少年你相信光吗.txt**: 混淆后的完整代码文件（约1.2MB）
+            - **${{ env.short_sha }}-少年你相信光吗.txt**: 混淆后的完整代码文件（约1.2MB）
+            - **${{ env.short_sha }}-default.txt**: 默认文件（与上面内容相同）
           files: |
-            少年你相信光吗.txt
+            ${{ env.release_file }}
+            ${{ env.default_file }}
           generate_release_notes: false
           draft: false
           prerelease: false
