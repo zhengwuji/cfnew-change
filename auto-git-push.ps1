@@ -11,11 +11,17 @@ $ErrorActionPreference = "Continue"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
+# 配置Git环境变量，确保不询问
+$env:GIT_EDITOR = "true"
+$env:GIT_TERMINAL_PROMPT = "0"
+$env:GIT_ASKPASS = "echo"
+
 Write-Host "🔄 开始自动Git推送流程..." -ForegroundColor Cyan
 
 # 配置Git（如果需要）
 git config --local push.default simple 2>$null
 git config --local core.autocrlf true 2>$null
+git config --local push.defaultCurrent simple 2>$null
 
 # 添加所有更改
 Write-Host "📦 添加所有更改到暂存区..." -ForegroundColor Yellow
@@ -34,7 +40,8 @@ if ($status) {
     $commitResult = git commit -m $CommitMessage 2>&1
     
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "🚀 强制推送到GitHub..." -ForegroundColor Yellow
+        Write-Host "🚀 强制推送到GitHub（自动允许，不询问）..." -ForegroundColor Yellow
+        # 使用 --force 强制推送，所有提示都自动确认
         $pushResult = git push --force origin main 2>&1
         
         if ($LASTEXITCODE -eq 0) {

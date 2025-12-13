@@ -1144,6 +1144,11 @@
         return btoa(links.join('\n'));
     }
 
+    function generateV2RayConfig(links) {
+        // V2Ray 订阅格式：base64 编码的节点链接列表（每行一个链接）
+        return btoa(links.join('\n'));
+    }
+
     async function handleSubscriptionRequest(request, user, url = null) {
         if (!url) url = new URL(request.url);
         
