@@ -709,6 +709,208 @@ export default {
                     }
                 }
 
+                // API文档页面路由
+                if (url.pathname === '/api-docs' || url.pathname === '/api-docs/') {
+                    const hostname = url.hostname;
+                    const apiDocsHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .endpoint:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        
+        .endpoint-url a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .endpoint-url a:hover {
+            text-decoration: underline;
+        }
+        
+        .endpoint-method {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #43e97b;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .endpoint-method.post {
+            background: #f093fb;
+        }
+        
+        .endpoint-desc {
+            color: #555;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #ffecd2;
+            color: #ff6b6b;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 API 文档</h1>
+        <p class="subtitle">所有可用的端点和页面</p>
+        
+        <div class="section">
+            <h2 class="section-title">🎨 页面</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/" target="_blank">https://${hostname}/</a>
+                </div>
+                <div class="endpoint-desc">主页 - 显示订阅链接和配置信息</div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/background" target="_blank">https://${hostname}/background</a>
+                </div>
+                <div class="endpoint-desc">背景切换页面 - 随机JAV番号 + 渐变背景</div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/api-docs" target="_blank">https://${hostname}/api-docs</a>
+                </div>
+                <div class="endpoint-desc">API文档 (当前页面)</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">🔌 API端点</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/{UUID}" target="_blank">https://${hostname}/{UUID}</a>
+                    <span class="badge">需要UUID</span>
+                </div>
+                <div class="endpoint-desc">订阅链接 - 返回VLESS节点配置</div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/{UUID}/region" target="_blank">https://${hostname}/{UUID}/region</a>
+                    <span class="badge">需要UUID</span>
+                </div>
+                <div class="endpoint-desc">检测Worker地区</div>
+            </div>
+            
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <span>https://${hostname}/{UUID}/test</span>
+                    <span class="badge">需要UUID</span>
+                </div>
+                <div class="endpoint-desc">API测试端点</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">📝 说明</h2>
+            <div class="endpoint">
+                <div class="endpoint-desc">
+                    • 带有<span class="badge">需要UUID</span>标记的端点需要将 {UUID} 替换为你的实际UUID<br>
+                    • 所有端点均支持HTTPS访问<br>
+                    • API返回格式: JSON
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+                    return new Response(apiDocsHTML, {
+                        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                    });
+                }
+
                 // 背景切换页面路由
                 if (url.pathname === '/background' || url.pathname === '/background/') {
                     const backgroundHTML = `<!DOCTYPE html>
