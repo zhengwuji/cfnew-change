@@ -1,5 +1,6 @@
 import { connect } from 'cloudflare:sockets';
 
+// 更新: 2025-12-14 - 添加 RDP 配置 UI 到订阅中心
 // 默认VLESS协议UUID（必须是标准格式：8-4-4-4-12）
 const defaultUUID = '9ac70987-feda-4925-83a2-9f3328c28f4a';
 let at = defaultUUID;  // VLESS协议认证用的UUID
