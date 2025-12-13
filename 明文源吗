@@ -549,23 +549,26 @@ export default {
                 }
 
                 try {
-                    // 访问javbus获取封面URL
-                    const javbusUrl = 'https://www.javbus.com/' + code;
-                    const response = await fetch(javbusUrl, {
+                    // 访问javlibrary获取封面URL
+                    const javlibUrl = 'https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=' + code;
+                    const response = await fetch(javlibUrl, {
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
                         }
                     });
 
                     if (!response.ok) {
-                        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch javbus' }), {
+                        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch javlibrary' }), {
                             status: 500,
                             headers: { 'Content-Type': 'application/json' }
                         });
                     }
 
                     const html = await response.text();
-                    const imgMatch = html.match(/<a[^>]+class="bigImage"[^>]*><img[^>]+src="([^"]+)"/);
+                    // javlibrary格式: <img ... src="//pics.dmm.co.jp/digital/video/..." alt="番号"
+                    const imgMatch = html.match(/<img[^>]+src="([^"]+)"[^>]*alt="[^"]*" + code.replace('-', '').toUpperCase() + "[^"]*"/i) ||
+                        html.match(/<img[^>]+id="video_jacket_img"[^>]+src="([^"]+)"/i);
 
                     if (!imgMatch) {
                         return new Response(JSON.stringify({ success: false, error: 'Image not found' }), {
@@ -583,7 +586,7 @@ export default {
                     const imageResponse = await fetch(imageUrl, {
                         headers: {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                            'Referer': 'https://www.javbus.com/'
+                            'Referer': 'https://www.javlibrary.com/'
                         }
                     });
 
@@ -1159,7 +1162,7 @@ export default {
             
             // 生成随机番号
             const code = generateRandomCode();
-            const detailLink = 'https://www.javbus.com/' + code;
+            const detailLink = 'https://www.javlibrary.com/cn/?v=javli' + code.toLowerCase().replace('-', '');
             
             currentVideoData = {
                 code: code,
@@ -3308,7 +3311,7 @@ async function handleSubscriptionPage(request, user = null) {
             function changeBackground() {
                 // 生成新番号
                 const code = generateRandomCode();
-                const detailLink = 'https://www.javbus.com/' + code;
+                const detailLink = 'https://www.javlibrary.com/cn/?v=javli' + code.toLowerCase().replace('-', '');
                 
                 currentVideoData = {
                     code: code,
