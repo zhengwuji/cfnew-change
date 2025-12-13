@@ -856,7 +856,14 @@ export default {
             changeBackground();
         });
         
-        async function changeBackground() {
+        function generateRandomCode() {
+            const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
+            const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
+            const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+            return randomSeries + '-' + randomNumber;
+        }
+        
+        function changeBackground() {
             const btn = document.getElementById('changeBtn');
             const loading = document.getElementById('loading');
             const bgImg = document.getElementById('backgroundImage');
@@ -865,57 +872,42 @@ export default {
             btn.disabled = true;
             loading.style.display = 'block';
             
-            try {
-                // 从后端获取随机番号
-                const response = await fetch('/api/proxy-image?code=RANDOM');
-                const data = await response.json();
-                
-                if (!data.success || !data.code) {
-                    throw new Error('API failed');
-                }
-                
-                const code = data.code;
-                const detailLink = data.link || ('https://www.javbus.com/' + code);
-                
-                // 使用随机渐变背景
-                const gradients = [
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                    'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
-                ];
-                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-                
-                currentVideoData = {
-                    code: code,
-                    link: detailLink
-                };
-                
-                // 更新UI - 使用渐变背景
-                bgImg.style.opacity = '0';
-                setTimeout(function() {
-                    bgImg.style.background = randomGradient;
-                    bgImg.src = '';
-                    bgImg.style.opacity = '1';
-                }, 300);
-                
-                codeEl.textContent = code;
-                
-            } catch (error) {
-                console.error('Error:', error);
-                codeEl.textContent = 'SSIS-002';
-                bgImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            // 生成随机番号
+            const code = generateRandomCode();
+            const detailLink = 'https://www.javbus.com/' + code;
+            
+            // 使用随机渐变背景
+            const gradients = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
+            ];
+            const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+            
+            currentVideoData = {
+                code: code,
+                link: detailLink
+            };
+            
+            // 更新UI - 使用渐变背景
+            bgImg.style.opacity = '0';
+            setTimeout(function() {
+                bgImg.style.background = randomGradient;
                 bgImg.src = '';
-            } finally {
-                btn.disabled = false;
-                loading.style.display = 'none';
-            }
+                bgImg.style.opacity = '1';
+            }, 300);
+            
+            codeEl.textContent = code;
+            
+            btn.disabled = false;
+            loading.style.display = 'none';
         }
         
         function openVideoLink() {
