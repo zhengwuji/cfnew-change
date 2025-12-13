@@ -866,8 +866,8 @@ export default {
             loading.style.display = 'block';
             
             try {
-                // 步骤1: 从后端获取随机番号
-                const response = await fetch('/api/random-video');
+                // 从后端获取随机番号
+                const response = await fetch('/api/proxy-image?code=RANDOM');
                 const data = await response.json();
                 
                 if (!data.success || !data.code) {
@@ -875,64 +875,34 @@ export default {
                 }
                 
                 const code = data.code;
-                const detailLink = 'https://www.javbus.com/' + code;
+                const detailLink = data.link || ('https://www.javbus.com/' + code);
                 
-                // 步骤2: 用浏览器直接访问javbus获取封面
-                let coverUrl = '';
-                try {
-                    const javbusResponse = await fetch(detailLink, {
-                        mode: 'cors',
-                        credentials: 'omit'
-                    });
-                    
-                    if (javbusResponse.ok) {
-                        const html = await javbusResponse.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        
-                        // 查找封面图
-                        const bigImage = doc.querySelector('a.bigImage img');
-                        if (bigImage) {
-                            coverUrl = bigImage.src;
-                        }
-                    }
-                } catch (corsError) {
-                    console.log('CORS blocked, using gradient fallback');
-                }
+                // 使用随机渐变背景
+                const gradients = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
+                ];
+                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
                 
                 currentVideoData = {
                     code: code,
-                    cover: coverUrl,
                     link: detailLink
                 };
                 
-                // 更新UI
+                // 更新UI - 使用渐变背景
                 bgImg.style.opacity = '0';
                 setTimeout(function() {
-                    if (coverUrl) {
-                        bgImg.style.background = '';
-                        bgImg.src = coverUrl;
-                        bgImg.onload = function() {
-                            bgImg.style.opacity = '1';
-                        };
-                        bgImg.onerror = function() {
-                            // 降级到CSS渐变
-                            bgImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                            bgImg.src = '';
-                            bgImg.style.opacity = '1';
-                        };
-                    } else {
-                        // CORS拦截，使用CSS渐变
-                        const gradients = [
-                            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
-                        ];
-                        const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-                        bgImg.style.background = randomGradient;
-                        bgImg.src = '';
-                        bgImg.style.opacity = '1';
-                    }
+                    bgImg.style.background = randomGradient;
+                    bgImg.src = '';
+                    bgImg.style.opacity = '1';
                 }, 300);
                 
                 codeEl.textContent = code;
@@ -1822,19 +1792,80 @@ async function fetchDynamicIPs() {
     return [];
 }
 
-// 生成随机番号（前端自行抓取）
+// 生成随机番号并返回代理图片URL
 async function fetchRandomJavdbVideo() {
-    // 预定义的番号列表
     const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
     const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
     const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
     const code = randomSeries + '-' + randomNumber;
 
+    // 返回代理图片URL（通过本Worker代理，避免CORS）
     return {
         success: true,
         code: code,
-        message: 'client-scrape'  // 告诉前端自行抓取
+        cover: '/api/proxy-image?code=' + code,  // 代理URL
+        link: 'https://www.javbus.com/' + code,
+        source: 'worker-proxy'
     };
+}
+
+// 图片代理接口 - 抓取javbus封面并返回图片
+async function handleImageProxy(request) {
+    const url = new URL(request.url);
+    const code = url.searchParams.get('code');
+
+    if (!code) {
+        return new Response('Missing code', { status: 400 });
+    }
+
+    try {
+        // 访问javbus获取封面URL
+        const javbusUrl = 'https://www.javbus.com/' + code;
+        const response = await fetch(javbusUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+
+        if (!response.ok) {
+            return new Response('Failed to fetch', { status: 500 });
+        }
+
+        const html = await response.text();
+        const imgMatch = html.match(/<a[^>]+class="bigImage"[^>]*><img[^>]+src="([^"]+)"/);
+
+        if (!imgMatch) {
+            return new Response('Image not found', { status: 404 });
+        }
+
+        let imageUrl = imgMatch[1];
+        if (!imageUrl.startsWith('http')) {
+            imageUrl = 'https:' + imageUrl;
+        }
+
+        // 代理图片（解决CORS问题）
+        const imageResponse = await fetch(imageUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://www.javbus.com/'
+            }
+        });
+
+        if (!imageResponse.ok) {
+            return new Response('Image fetch failed', { status: 500 });
+        }
+
+        // 返回图片，设置CORS头
+        return new Response(imageResponse.body, {
+            headers: {
+                'Content-Type': imageResponse.headers.get('Content-Type') || 'image/jpeg',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=86400'
+            }
+        });
+    } catch (error) {
+        return new Response('Error: ' + error.message, { status: 500 });
+    }
 }
 
 async function fetchAndParseWetest(url) {
