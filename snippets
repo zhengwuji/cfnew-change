@@ -307,30 +307,6 @@ body{font-family:"Courier New",monospace;background:#000;color:#00ff00;min-heigh
 <div class="subscription-url" id="base64SubscriptionUrl"></div>
 </div>
 <div class="card">
-<h2 class="card-title">[ RDP 加速配置 ]</h2>
-<div style="margin-bottom:20px">
-<label style="display:block;margin-bottom:10px;color:#00ff00">远程服务器IP:</label>
-<input type="text" id="rdpServerIP" placeholder="例如: 192.168.1.100" style="width:100%;padding:12px;background:rgba(0,0,0,0.8);border:1px solid #00ff00;color:#00ff00;font-family:'Courier New',monospace" />
-</div>
-<div style="margin-bottom:20px">
-<label style="display:block;margin-bottom:10px;color:#00ff00">RDP 端口:</label>
-<input type="number" id="rdpServerPort" value="3389" placeholder="默认: 3389" style="width:100%;padding:12px;background:rgba(0,0,0,0.8);border:1px solid #00ff00;color:#00ff00;font-family:'Courier New',monospace" />
-</div>
-<div style="margin-bottom:20px">
-<label style="display:block;margin-bottom:10px;color:#00ff00">本地映射端口:</label>
-<input type="number" id="rdpLocalPort" value="13389" placeholder="默认: 13389" style="width:100%;padding:12px;background:rgba(0,0,0,0.8);border:1px solid #00ff00;color:#00ff00;font-family:'Courier New',monospace" />
-</div>
-<button class="generate-btn" onclick="generateRDPSubscription()">🖥️ 生成 RDP 加速订阅</button>
-<div class="subscription-url" id="rdpSubscriptionUrl"></div>
-<div style="margin-top:15px;padding:10px;background:rgba(0,255,0,0.1);border-left:3px solid #00ff00;color:#00aa00;font-size:0.9rem">
-<strong>💡 使用说明:</strong><br/>
-1. 填写远程服务器IP和RDP端口<br/>
-2. 设置本地映射端口（默认13389）<br/>
-3. 生成订阅并导入V2Ray客户端<br/>
-4. 连接后，在RDP客户端输入: <code style="color:#00ff00">127.0.0.1:13389</code>
-</div>
-</div>
-<div class="card">
 <h2 class="card-title">[ 相关链接 ]</h2>
 <div style="text-align:center;margin:20px 0">
 <a href="https://github.com/byJoey/cfnew" target="_blank" style="color:#00ff00;text-decoration:none;margin:0 20px;font-size:1.2rem;text-shadow:0 0 5px #00ff00">GitHub 项目</a>
@@ -442,20 +418,6 @@ document.getElementById("base64SubscriptionUrl").textContent=base64Content;
 document.getElementById("base64SubscriptionUrl").style.display="block";
 navigator.clipboard.writeText(base64Content).then(function(){alert("Base64订阅内容已复制");});
 }).catch(function(error){alert("获取订阅失败，请重试");});
-}
-function generateRDPSubscription(){
-var serverIP=document.getElementById("rdpServerIP").value.trim();
-var serverPort=document.getElementById("rdpServerPort").value||"3389";
-var localPort=document.getElementById("rdpLocalPort").value||"13389";
-if(!serverIP){alert("请输入远程服务器IP");return;}
-var currentUrl=window.location.href;
-var baseHost=window.location.hostname;
-var rdpRemark="RDP加速-"+serverIP+":"+serverPort+"→127.0.0.1:"+localPort;
-var vlessLink="vless://00000000-0000-0000-0000-000000000000@"+baseHost+":443?encryption=none&security=tls&sni="+baseHost+"&fp=randomized&type=ws&host="+baseHost+"&path=%2F%3Fed%3D2048%26rdp%3D"+serverIP+"%3A"+serverPort+"%3A"+localPort+"#"+encodeURIComponent(rdpRemark);
-var rdpSubscription=btoa(vlessLink);
-document.getElementById("rdpSubscriptionUrl").textContent=rdpSubscription;
-document.getElementById("rdpSubscriptionUrl").style.display="block";
-navigator.clipboard.writeText(rdpSubscription).then(function(){alert("RDP加速订阅已复制到剪贴板！\\n\\n配置完成后：\\n1. 导入V2Ray客户端\\n2. 连接节点\\n3. RDP客户端输入: 127.0.0.1:"+localPort);});
 }
 </script>
 </body>
