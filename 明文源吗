@@ -877,15 +877,15 @@ export default {
                 
                 // 更新UI
                 bgImg.style.opacity = '0';
-                setTimeout(() => {
+                setTimeout(function() {
                     bgImg.src = data.cover;
-                    bgImg.onload = () => {
+                    bgImg.onload = function() {
                         bgImg.style.opacity = '1';
                     };
-                    bgImg.onerror = () => {
+                    bgImg.onerror = function() {
                         // 如果图片加载失败，尝试降级URL
                         const codeForUrl = data.code.toLowerCase().replace('-', '');
-                        bgImg.src = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
+                        bgImg.src = 'https://pics.dmm.co.jp/digital/video/' + codeForUrl + '/' + codeForUrl + 'pl.jpg';
                         bgImg.style.opacity = '1';
                     };
                 }, 300);
@@ -1783,11 +1783,11 @@ async function fetchRandomJavdbVideo() {
     const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
     const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
     const code = `${randomSeries}-${randomNumber}`;
-    
+
     // 降级方案：DMM缩略图
     const codeForUrl = code.toLowerCase().replace('-', '');
     const fallbackCover = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
-    
+
     // 尝试从详情页获取大图
     try {
         const detailUrl = `https://javdb.com/search?q=${code}`;
@@ -1797,10 +1797,10 @@ async function fetchRandomJavdbVideo() {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
             }
         });
-        
+
         if (response.ok) {
             const html = await response.text();
-            
+
             // 尝试提取大图
             const imgMatches = html.match(/<img[^>]+src="([^"]+)"[^>]*>/g);
             if (imgMatches) {
@@ -1830,7 +1830,7 @@ async function fetchRandomJavdbVideo() {
     } catch (error) {
         // 爬取失败，继续使用降级方案
     }
-    
+
     // 降级方案：返回 DMM 缩略图
     return {
         success: true,
