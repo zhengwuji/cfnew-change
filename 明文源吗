@@ -2023,6 +2023,27 @@
                 font-size: 0.75rem;
                 margin-left: 8px;
             }
+            select {
+                background: #ffffff !important;
+                color: #333 !important;
+                border: 1px solid #e5e7eb !important;
+            }
+            select option {
+                background: #ffffff !important;
+                color: #333 !important;
+                padding: 8px 12px !important;
+            }
+            select option:checked,
+            select option:focus,
+            select option:hover {
+                background: #f3f4f6 !important;
+                color: #333 !important;
+            }
+            select:focus {
+                outline: none;
+                border-color: #22c55e !important;
+                box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+            }
         </style>
     </head>
     <body>
