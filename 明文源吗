@@ -540,6 +540,76 @@ export default {
                 }
             }
 
+            // 处理图片代理路由
+            if (url.pathname === '/api/proxy-image') {
+                const code = url.searchParams.get('code');
+
+                if (!code) {
+                    return new Response('Missing code parameter', { status: 400 });
+                }
+
+                try {
+                    // 访问javbus获取封面URL
+                    const javbusUrl = 'https://www.javbus.com/' + code;
+                    const response = await fetch(javbusUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        return new Response(JSON.stringify({ success: false, error: 'Failed to fetch javbus' }), {
+                            status: 500,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+
+                    const html = await response.text();
+                    const imgMatch = html.match(/<a[^>]+class="bigImage"[^>]*><img[^>]+src="([^"]+)"/);
+
+                    if (!imgMatch) {
+                        return new Response(JSON.stringify({ success: false, error: 'Image not found' }), {
+                            status: 404,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+
+                    let imageUrl = imgMatch[1];
+                    if (!imageUrl.startsWith('http')) {
+                        imageUrl = 'https:' + imageUrl;
+                    }
+
+                    // 代理图片
+                    const imageResponse = await fetch(imageUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            'Referer': 'https://www.javbus.com/'
+                        }
+                    });
+
+                    if (!imageResponse.ok) {
+                        return new Response(JSON.stringify({ success: false, error: 'Image fetch failed' }), {
+                            status: 500,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+
+                    // 返回图片
+                    return new Response(imageResponse.body, {
+                        headers: {
+                            'Content-Type': imageResponse.headers.get('Content-Type') || 'image/jpeg',
+                            'Access-Control-Allow-Origin': '*',
+                            'Cache-Control': 'public, max-age=86400'
+                        }
+                    });
+                } catch (error) {
+                    return new Response(JSON.stringify({ success: false, error: error.message }), {
+                        status: 500,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+            }
+
             if (url.pathname.includes('/api/preferred-ips')) {
             }
 
@@ -3179,6 +3249,18 @@ async function handleSubscriptionPage(request, user = null) {
                 'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
             ];
             
+            // 备用静态背景图（高清风景）
+            const staticBackgrounds = [
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
+                'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
+                'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80',
+                'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1920&q=80',
+                'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&q=80',
+                'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80',
+                'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80',
+                'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80'
+            ];
+            
             let currentVideoData = null;
             
             // 生成随机番号
@@ -3211,22 +3293,10 @@ async function handleSubscriptionPage(request, user = null) {
                 const code = generateRandomCode();
                 const detailLink = 'https://www.javbus.com/' + code;
                 
-                // 随机选择一个新的渐变（确保不重复）
-                let newIndex;
-                do {
-                    newIndex = Math.floor(Math.random() * gradients.length);
-                } while (newIndex === currentBgIndex && gradients.length > 1);
-                
-                currentBgIndex = newIndex;
-                const gradient = gradients[currentBgIndex];
-                
                 currentVideoData = {
                     code: code,
                     link: detailLink
                 };
-                
-                // 设置背景渐变
-                document.body.style.backgroundImage = gradient;
                 
                 // 更新番号信息（可点击跳转）
                 const bgInfo = document.getElementById('bgInfo');
@@ -3234,8 +3304,37 @@ async function handleSubscriptionPage(request, user = null) {
                     bgInfo.innerHTML = '番号: <a href="' + detailLink + '" target="_blank" style="color: inherit; text-decoration: underline;">' + code + '</a>';
                 }
                 
-                // 保存到localStorage
-                saveBackgroundIndex(currentBgIndex);
+                // 尝试从代理加载图片
+                const proxyUrl = '/api/proxy-image?code=' + code;
+                const img = new Image();
+                
+                img.onload = function() {
+                    // 成功加载代理图片
+                    document.body.style.backgroundImage = 'url(' + proxyUrl + ')';
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundAttachment = 'fixed';
+                };
+                
+                img.onerror = function() {
+                    // 代理失败，使用静态背景图
+                    let newIndex;
+                    do {
+                        newIndex = Math.floor(Math.random() * staticBackgrounds.length);
+                    } while (newIndex === currentBgIndex && staticBackgrounds.length > 1);
+                    
+                    currentBgIndex = newIndex;
+                    const staticBg = staticBackgrounds[currentBgIndex];
+                    
+                    document.body.style.backgroundImage = 'url(' + staticBg + ')';
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundAttachment = 'fixed';
+                    
+                    saveBackgroundIndex(currentBgIndex);
+                };
+                
+                img.src = proxyUrl;
             }
             
             // 初始化背景
