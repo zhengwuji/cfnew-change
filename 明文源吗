@@ -1858,14 +1858,14 @@ async function fetchRandomJavdbVideo() {
             link: detailUrl
         };
     } catch (error) {
-        // 删除日志以节省可观测性事件
+        // 返回详细错误信息用于调试
         return {
             success: false,
-            error: error.message,
-            // 返回备用数据
-            code: 'SSIS-002',
-            cover: 'https://via.placeholder.com/300x420/1a1a2e/ffffff?text=No+Image',
-            title: 'Failed to load',
+            error: error.message || String(error),
+            stack: error.stack || '',
+            code: 'ERROR',
+            cover: 'https://via.placeholder.com/800x600/ff0000/ffffff?text=Error',
+            title: 'Error occurred',
             link: 'https://javdb.com'
         };
     }
