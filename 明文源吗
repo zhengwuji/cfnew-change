@@ -1162,7 +1162,7 @@ export default {
             
             // 生成随机番号
             const code = generateRandomCode();
-            const detailLink = 'https://www.javlibrary.com/cn/?v=javli' + code.toLowerCase().replace('-', '');
+            const detailLink = 'https://www.javlibrary.com/tw/vl_searchbyid.php?keyword=' + code;
             
             currentVideoData = {
                 code: code,
@@ -3311,7 +3311,7 @@ async function handleSubscriptionPage(request, user = null) {
             function changeBackground() {
                 // 生成新番号
                 const code = generateRandomCode();
-                const detailLink = 'https://www.javlibrary.com/cn/?v=javli' + code.toLowerCase().replace('-', '');
+                const detailLink = 'https://www.javlibrary.com/tw/vl_searchbyid.php?keyword=' + code;
                 
                 currentVideoData = {
                     code: code,
