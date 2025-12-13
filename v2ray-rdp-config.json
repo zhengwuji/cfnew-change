@@ -1,0 +1,65 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "tag": "rdp-in",
+      "port": 13389,
+      "listen": "127.0.0.1",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "RDP服务器地址",
+        "port": 3389,
+        "network": "tcp"
+      },
+      "sniffing": {
+        "enabled": false
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "rdp-proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "ccrough-block-ebe1cc.852446634.workers.dev",
+            "port": 443,
+            "users": [
+              {
+                "id": "9ac70987-feda-4925-83a2-9f3328c28f4a",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "ccrough-block-ebe1cc.852446634.workers.dev",
+          "allowInsecure": false
+        },
+        "wsSettings": {
+          "path": "/?ed=2048",
+          "headers": {
+            "Host": "ccrough-block-ebe1cc.852446634.workers.dev"
+          }
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["rdp-in"],
+        "outboundTag": "rdp-proxy"
+      }
+    ]
+  }
+}
