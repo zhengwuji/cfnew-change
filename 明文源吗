@@ -1787,13 +1787,23 @@
     }
 
     function parseWsPacketHeader(chunk, token) {
-        if (chunk.byteLength < 24) return { hasError: true, message: E_INVALID_DATA };
+        if (chunk.byteLength < 24) {
+            console.log('[WS-DEBUG] parseWsPacketHeader: chunk too small', chunk.byteLength);
+            return { hasError: true, message: E_INVALID_DATA };
+        }
         const version = new Uint8Array(chunk.slice(0, 1));
-        if (formatIdentifier(new Uint8Array(chunk.slice(1, 17))) !== token) return { hasError: true, message: E_INVALID_USER };
+        const chunkToken = formatIdentifier(new Uint8Array(chunk.slice(1, 17)));
+        if (chunkToken !== token) {
+            console.log('[WS-DEBUG] parseWsPacketHeader: token mismatch', 'expected:', token, 'got:', chunkToken);
+            return { hasError: true, message: E_INVALID_USER };
+        }
         const optLen = new Uint8Array(chunk.slice(17, 18))[0];
         const cmd = new Uint8Array(chunk.slice(18 + optLen, 19 + optLen))[0];
         let isUDP = false;
-        if (cmd === 1) {} else if (cmd === 2) { isUDP = true; } else { return { hasError: true, message: E_UNSUPPORTED_CMD }; }
+        if (cmd === 1) {} else if (cmd === 2) { isUDP = true; } else {
+            console.log('[WS-DEBUG] parseWsPacketHeader: unsupported command', cmd);
+            return { hasError: true, message: E_UNSUPPORTED_CMD };
+        }
         const portIdx = 19 + optLen;
         const port = new DataView(chunk.slice(portIdx, portIdx + 2)).getUint16(0);
         let addrIdx = portIdx + 2, addrLen = 0, addrValIdx = addrIdx + 1, hostname = '';
@@ -1802,9 +1812,14 @@
             case ADDRESS_TYPE_IPV4: addrLen = 4; hostname = new Uint8Array(chunk.slice(addrValIdx, addrValIdx + addrLen)).join('.'); break;
             case ADDRESS_TYPE_URL: addrLen = new Uint8Array(chunk.slice(addrValIdx, addrValIdx + 1))[0]; addrValIdx += 1; hostname = new TextDecoder().decode(chunk.slice(addrValIdx, addrValIdx + addrLen)); break;
             case ADDRESS_TYPE_IPV6: addrLen = 16; const ipv6 = []; const ipv6View = new DataView(chunk.slice(addrValIdx, addrValIdx + addrLen)); for (let i = 0; i < 8; i++) ipv6.push(ipv6View.getUint16(i * 2).toString(16)); hostname = ipv6.join(':'); break;
-            default: return { hasError: true, message: `${E_INVALID_ADDR_TYPE}: ${addressType}` };
+            default:
+                console.log('[WS-DEBUG] parseWsPacketHeader: invalid address type', addressType);
+                return { hasError: true, message: `${E_INVALID_ADDR_TYPE}: ${addressType}` };
         }
-        if (!hostname) return { hasError: true, message: `${E_EMPTY_ADDR}: ${addressType}` };
+        if (!hostname) {
+            console.log('[WS-DEBUG] parseWsPacketHeader: empty hostname, addressType:', addressType);
+            return { hasError: true, message: `${E_EMPTY_ADDR}: ${addressType}` };
+        }
         return { hasError: false, addressType, port, hostname, isUDP, rawIndex: addrValIdx + addrLen, version };
     }
 
