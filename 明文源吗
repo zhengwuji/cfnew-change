@@ -724,6 +724,26 @@ export default {
                     }
                 }
 
+                // 订阅中心页面路由 - /{UUID} 或 /{自定义路径}
+                if (url.pathname.split('/').filter(p => p).length === 1 && !url.pathname.includes('api') && !url.pathname.includes('rdp')) {
+                    const pathParts = url.pathname.split('/').filter(p => p);
+                    if (pathParts.length === 1) {
+                        const pathIdentifier = pathParts[0];
+                        let isValid = false;
+
+                        if (cp && cp.trim()) {
+                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                            isValid = (pathIdentifier === cleanCustomPath);
+                        } else {
+                            isValid = (pathIdentifier === envUKey);
+                        }
+
+                        if (isValid) {
+                            return await handleSubscriptionPage(request, url.hostname);
+                        }
+                    }
+                }
+
                 // RDP API路由
                 if (url.pathname.includes('/api/rdp')) {
                     const pathParts = url.pathname.split('/').filter(function (p) { return p; });
@@ -6159,4 +6179,114 @@ async function handleRdpAPI(request) {
  */
 function generateRandomId() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+// 订阅中心页面处理函数（从snippets复制并修改）
+async function handleSubscriptionPage(request, hostname) {
+    const pageHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订阅中心</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Courier New",monospace;background:#000;color:#00ff00;min-height:100vh;overflow-x:hidden;position:relative}
+.matrix-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(45deg,#000 0%,#001100 50%,#000 100%);z-index:-1}
+.container{max-width:900px;margin:0 auto;padding:20px;position:relative;z-index:1}
+.header{text-align:center;margin-bottom:40px}
+.title{font-size:3rem;font-weight:bold;color:#00ff00;margin-bottom:10px}
+.subtitle{color:#00aa00;margin-bottom:30px;font-size:1.2rem}
+.card{background:rgba(0,20,0,0.8);border:2px solid #00ff00;border-radius:0;padding:30px;margin-bottom:20px;box-shadow:0 0 20px rgba(0,255,0,0.3)}
+.card-title{font-size:1.8rem;margin-bottom:20px;color:#00ff00}
+.client-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:15px;margin:20px 0}
+.client-btn{background:rgba(0,20,0,0.6);border:2px solid #00ff00;padding:15px 20px;color:#00ff00;font-family:"Courier New",monospace;font-weight:bold;cursor:pointer;transition:all 0.3s}
+.client-btn:hover{background:rgba(0,255,0,0.2);box-shadow:0 0 15px #00ff00}
+.generate-btn{background:rgba(0,255,0,0.1);border:2px solid #00ff00;padding:15px 30px;color:#00ff00;font-family:"Courier New",monospace;font-weight:bold;cursor:pointer;transition:all 0.3s;margin-right:15px}
+.generate-btn:hover{background:rgba(0,255,0,0.3);box-shadow:0 0 20px #00ff00}
+.subscription-url{background:rgba(0,0,0,0.8);border:1px solid #00ff00;padding:15px;word-break:break-all;font-family:"Courier New",monospace;color:#00ff00;margin-top:20px;display:none}
+input{width:100%;padding:12px;background:rgba(0,0,0,0.8);border:1px solid #00ff00;color:#00ff00;font-family:"Courier New",monospace;margin-bottom:15px}
+label{display:block;margin-bottom:10px;color:#00ff00}
+.hint{margin-top:15px;padding:10px;background:rgba(0,255,0,0.1);border-left:3px solid #00ff00;color:#00aa00;font-size:0.9rem}
+</style>
+</head>
+<body>
+<div class="matrix-bg"></div>
+<div class="container">
+<div class="header">
+<h1 class="title">订阅中心</h1>
+<p class="subtitle">多客户端支持 • 智能优选 • RDP加速</p>
+</div>
+<div class="card">
+<h2 class="card-title">[ 选择客户端 ]</h2>
+<div class="client-grid">
+<button class="client-btn" onclick="generateClientLink('clash','CLASH')">CLASH</button>
+<button class="client-btn" onclick="generateClientLink('surge','SURGE')">SURGE</button>
+<button class="client-btn" onclick="generateClientLink('singbox','SING-BOX')">SING-BOX</button>
+<button class="client-btn" onclick="generateClientLink('v2ray','V2RAY')">V2RAY</button>
+<button class="client-btn" onclick="generateClientLink('v2ray','Shadowrocket')">Shadowrocket</button>
+<button class="client-btn" onclick="generateClientLink('v2ray','V2RAYNG')">V2RAYNG</button>
+</div>
+<div class="subscription-url" id="clientSubscriptionUrl"></div>
+</div>
+<div class="card">
+<h2 class="card-title">[ RDP 加速配置 ]</h2>
+<div>
+<label>远程服务器IP:</label>
+<input type="text" id="rdpServerIP" placeholder="例如: 192.168.1.100" />
+</div>
+<div>
+<label>RDP 端口:</label>
+<input type="number" id="rdpServerPort" value="3389" placeholder="默认: 3389" />
+</div>
+<div>
+<label>本地映射端口:</label>
+<input type="number" id="rdpLocalPort" value="13389" placeholder="默认: 13389" />
+</div>
+<button class="generate-btn" onclick="generateRDPSubscription()">🖥️ 生成 RDP 加速订阅</button>
+<div class="subscription-url" id="rdpSubscriptionUrl"></div>
+<div class="hint">
+<strong>💡 使用说明:</strong><br/>
+1. 填写远程服务器IP和RDP端口<br/>
+2. 设置本地映射端口（默认13389）<br/>
+3. 生成订阅并导入V2Ray客户端<br/>
+4. 连接后，在RDP客户端输入: <code style="color:#00ff00">127.0.0.1:13389</code>
+</div>
+</div>
+</div>
+<script>
+var SUB_CONVERTER_URL="${scu}";
+var currentUrl=window.location.href;
+function generateClientLink(clientType,clientName){
+var subscriptionUrl=currentUrl+"/sub";
+var finalUrl=subscriptionUrl;
+if(clientType==='v2ray'){
+document.getElementById("clientSubscriptionUrl").textContent=finalUrl;
+document.getElementById("clientSubscriptionUrl").style.display="block";
+navigator.clipboard.writeText(finalUrl).then(function(){alert(clientName+" 订阅链接已复制");});
+}else{
+var encodedUrl=encodeURIComponent(subscriptionUrl);
+finalUrl=SUB_CONVERTER_URL+"?target="+clientType+"&url="+encodedUrl+"&insert=false";
+document.getElementById("clientSubscriptionUrl").textContent=finalUrl;
+document.getElementById("clientSubscriptionUrl").style.display="block";
+navigator.clipboard.writeText(finalUrl).then(function(){alert(clientName+" 订阅链接已复制");});
+}
+}
+function generateRDPSubscription(){
+var serverIP=document.getElementById("rdpServerIP").value.trim();
+var serverPort=document.getElementById("rdpServerPort").value||"3389";
+var localPort=document.getElementById("rdpLocalPort").value||"13389";
+if(!serverIP){alert("请输入远程服务器IP");return;}
+var rdpRemark="RDP加速-"+serverIP+":"+serverPort+"→127.0.0.1:"+localPort;
+var vlessLink="vless://00000000-0000-0000-0000-000000000000@${hostname}:443?encryption=none&security=tls&sni=${hostname}&fp=randomized&type=ws&host=${hostname}&path=%2F%3Fed%3D2048%26rdp%3D"+serverIP+"%3A"+serverPort+"%3A"+localPort+"#"+encodeURIComponent(rdpRemark);
+var rdpSubscription=btoa(vlessLink);
+document.getElementById("rdpSubscriptionUrl").textContent=rdpSubscription;
+document.getElementById("rdpSubscriptionUrl").style.display="block";
+navigator.clipboard.writeText(rdpSubscription).then(function(){alert("RDP加速订阅已复制！\\n\\n配置完成后：\\n1. 导入V2Ray客户端\\n2. 连接节点\\n3. RDP客户端输入: 127.0.0.1:"+localPort);});
+}
+</script>
+</body>
+</html>`;
+    return new Response(pageHtml, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
 }
