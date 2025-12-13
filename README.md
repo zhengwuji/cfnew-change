@@ -28,6 +28,7 @@
 - 🚀 **应用唤醒** - 点击按钮自动唤醒对应客户端应用
 - 🔍 **自动识别** - 根据User-Agent自动识别并返回对应格式
 - 🌐 **多语言支持** - 支持中文和波斯语（伊朗语），根据浏览器语言自动切换
+- 🖥️ **RDP加速** - 通过WebSocket隧道加速远程桌面连接，支持多种使用方式
 
 ---
 
@@ -40,6 +41,7 @@
 - 💾 **浏览器记忆** - 测试设置自动保存到浏览器，刷新不丢失
 - ✅ **一键添加优选** - 选中测试结果一键替换优选列表并自动保存
 - 🔧 **扣除握手时间** - 延迟测试自动扣除DNS+TLS握手时间，显示真实网络延迟
+- 🖥️ **RDP加速功能** - 新增远程桌面加速，支持Web管理、Node.js桥接和V2Ray三种方式
 
 ---
 
@@ -232,6 +234,143 @@ curl -X DELETE "https://your-worker.workers.dev/{UUID或自定义路径}/api/pre
 - **智能优选**：每15分钟自动优选一次，保持最佳性能
 - **容错机制**：多重备用方案，确保服务稳定性
 - **缓存优化**：智能缓存机制，减少重复计算
+
+---
+
+## 🖥️ RDP加速功能
+
+通过WebSocket隧道实现远程桌面协议(RDP)加速，支持跨国访问和网络受限场景。
+
+### 功能特性
+
+- ✅ **Web管理界面** - 图形化添加和管理RDP服务器
+- ✅ **WebSocket隧道** - 利用现有VLESS通道传输RDP流量
+- ✅ **多种使用方式** - Node.js桥接、V2Ray自动代理等
+- ✅ **多服务器支持** - 同时管理多台RDP服务器
+- ✅ **安全验证** - UUID路径保护，防止未授权访问
+
+### 使用方式
+
+#### 方式一：Web管理界面（管理服务器）
+
+访问 `https://your-worker.dev/{UUID}/rdp-admin` 进行服务器管理
+
+**功能：**
+- 添加RDP服务器（名称、地址、端口）
+- 查看服务器列表和WebSocket URL
+- 删除不需要的服务器
+- 获取连接配置
+
+#### 方式二：Node.js桥接（适合开发测试）
+
+**优点：** 简单直接，适合临时使用  
+**缺点：** 需要手动运行，不支持开机自启
+
+**快速开始：**
+```bash
+# 1. 安装Node.js (https://nodejs.org/)
+
+# 2. 安装依赖
+npm install ws
+
+# 3. 配置并运行桥接脚本
+node rdp-bridge.js
+
+# 4. 使用远程桌面连接
+mstsc /v:localhost:13389
+```
+
+**详细教程：** [Windows10-RDP使用指南.md](Windows10-RDP使用指南.md)
+
+#### 方式三：V2Ray自动代理（推荐生产使用）⭐
+
+**优点：**
+- ✅ 一次配置，永久使用
+- ✅ 开机自启，后台运行
+- ✅ 图形化管理（V2RayN）
+- ✅ 多服务器轻松配置
+- ✅ 性能优异，低延迟
+
+**快速开始：**
+```bash
+# 1. 下载V2RayN
+# https://github.com/2dust/v2rayN/releases
+
+# 2. 编辑配置文件 v2ray-rdp-config.json
+# - 修改RDP服务器地址
+# - 修改Workers域名
+# - 修改UUID
+
+# 3. 导入配置到V2RayN
+
+# 4. 使用远程桌面连接
+mstsc /v:localhost:13389
+```
+
+**详细教程：** [V2Ray-RDP加速指南.md](V2Ray-RDP加速指南.md)
+
+### 配置文件
+
+| 文件 | 说明 | 用途 |
+|------|------|------|
+| `rdp-bridge.js` | Node.js桥接脚本 | 开发测试使用 |
+| `v2ray-rdp-config.json` | V2Ray配置模板 | 生产环境推荐 |
+| `rdp-client.html` | 客户端示例页面 | 使用说明和示例 |
+| `Windows10-RDP使用指南.md` | Node.js方式教程 | 详细步骤 |
+| `V2Ray-RDP加速指南.md` | V2Ray方式教程 | 完整配置指南 |
+| `RDP-README.md` | 功能总览 | API文档和说明 |
+
+### 多服务器配置示例
+
+```json
+{
+  "inbounds": [
+    {"port": 13389, "settings": {"address": "192.168.1.100", "port": 3389}},
+    {"port": 13390, "settings": {"address": "192.168.1.101", "port": 3389}},
+    {"port": 13391, "settings": {"address": "10.0.0.50", "port": 3389}}
+  ]
+}
+```
+
+连接时使用：
+- 服务器1：`localhost:13389`
+- 服务器2：`localhost:13390`
+- 服务器3：`localhost:13391`
+
+### API管理
+
+#### 获取服务器列表
+```bash
+curl https://your-worker.dev/{UUID}/api/rdp-servers
+```
+
+#### 添加服务器
+```bash
+curl -X POST https://your-worker.dev/{UUID}/api/rdp-servers \
+  -H "Content-Type: application/json" \
+  -d '{"name":"办公服务器","host":"192.168.1.100","port":3389}'
+```
+
+#### 删除服务器
+```bash
+curl -X DELETE https://your-worker.dev/{UUID}/api/rdp-servers/{server-id}
+```
+
+### 使用场景
+
+- 🌍 **跨国访问** - 加速跨境RDP连接
+- 🔒 **突破限制** - 绕过网络封锁
+- 🚀 **性能优化** - 通过CDN节点加速
+- 🏢 **企业远程办公** - 安全稳定的远程接入
+
+### 注意事项
+
+1. **WebSocket限制** - 长时间无数据可能断开，脚本内置心跳机制
+2. **性能考虑** - 延迟取决于到Cloudflare节点的距离
+3. **不支持UDP** - RDP的UDP功能无法使用，仅支持TCP模式
+4. **安全建议** - 使用强密码，限制访问IP范围
+
+---
 
 ### 致谢
 
