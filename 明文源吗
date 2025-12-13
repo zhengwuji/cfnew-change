@@ -910,10 +910,10 @@ export default {
     </script>
 </body>
 </html>`;
-                    
+
                     return new Response(backgroundHTML, {
                         status: 200,
-                        headers: { 
+                        headers: {
                             'Content-Type': 'text/html; charset=utf-8',
                             'Cache-Control': 'no-cache'
                         }
@@ -1794,41 +1794,71 @@ async function fetchRandomJavdbVideo() {
 
         const html = await response.text();
 
-        // 提取视频列表
-        const videos = [];
-        // 匹配视频项：<a href="/v/xxx" class="box">
-        const videoRegex = /<a\s+href="\/v\/([^"]+)"\s+class="box"[^>]*>[\s\S]*?<img[^>]+data-src="([^"]+)"[^>]*>[\s\S]*?<div class="video-title[\s\S]*?>([^<]+)<\/div>/g;
+        // 提取视频代码列表（只获取番号，不获取缩略图）
+        const videoCodes = [];
+        const videoLinkRegex = /<a\s+href="\/v\/([^"]+)"/g;
 
         let match;
-        while ((match = videoRegex.exec(html)) !== null) {
-            const code = match[1];  // 番号代码
-            const cover = match[2]; // 封面图 URL
-            const title = match[3].trim(); // 标题
-
-            videos.push({
-                code,
-                cover: cover.startsWith('http') ? cover : `https:${cover}`,
-                title,
-                link: `https://javdb.com/v/${code}`
-            });
+        while ((match = videoLinkRegex.exec(html)) !== null) {
+            videoCodes.push(match[1]);
         }
 
-        if (videos.length === 0) {
+        if (videoCodes.length === 0) {
             throw new Error('No videos found');
         }
 
-        // 随机选择一个
-        const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+        // 随机选择一个番号
+        const randomCode = videoCodes[Math.floor(Math.random() * videoCodes.length)];
+
+        // 访问详情页获取大封面图
+        const detailUrl = `https://javdb.com/v/${randomCode}`;
+        const detailResponse = await fetch(detailUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml',
+                'Referer': 'https://javdb.com/'
+            }
+        });
+
+        if (!detailResponse.ok) {
+            throw new Error('Detail page error');
+        }
+
+        const detailHtml = await detailResponse.text();
+
+        // 提取大封面图
+        let coverUrl = '';
+        const coverMatch = detailHtml.match(/<img[^>]+class="[^"]*video-cover[^"]*"[^>]+src="([^"]+)"/);
+        if (coverMatch) {
+            coverUrl = coverMatch[1];
+        } else {
+            const altCoverMatch = detailHtml.match(/column-video-cover[^>]*>[\s\S]*?<img[^>]+src="([^"]+)"/);
+            if (altCoverMatch) {
+                coverUrl = altCoverMatch[1];
+            }
+        }
+
+        // 提取标题
+        let title = randomCode.toUpperCase();
+        const titleMatch = detailHtml.match(/<h2[^>]*class="[^"]*title[^"]*"[^>]*>([^<]+)<\/h2>/);
+        if (titleMatch) {
+            title = titleMatch[1].trim();
+        }
+
+        // 确保URL完整
+        if (coverUrl && !coverUrl.startsWith('http')) {
+            coverUrl = `https:${coverUrl}`;
+        }
 
         return {
             success: true,
-            code: randomVideo.code.toUpperCase(),
-            cover: randomVideo.cover,
-            title: randomVideo.title,
-            link: randomVideo.link
+            code: randomCode.toUpperCase(),
+            cover: coverUrl || 'https://via.placeholder.com/800x600/1a1a2e/ffffff?text=No+Image',
+            title: title,
+            link: detailUrl
         };
     } catch (error) {
-        console.error('[javdb] Error fetching video:', error);
+        // 删除日志以节省可观测性事件
         return {
             success: false,
             error: error.message,
