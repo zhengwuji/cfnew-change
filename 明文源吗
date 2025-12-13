@@ -3020,6 +3020,82 @@ async function handleSubscriptionPage(request, user = null) {
                 </div>
             </div>
             <div class="card">
+                    <h2 class="card-title">🚀 V2Ray RDP配置生成器</h2>
+                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <p style="color: #666; font-size: 0.875rem; margin-bottom: 20px;">
+                        一键生成V2Ray RDP加速配置文件，无需手动编辑JSON
+                    </p>
+                    
+                    <form id="rdpConfigForm" style="display: grid; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 0.875rem;">
+                                📍 RDP服务器地址
+                            </label>
+                            <input type="text" id="rdpServerHost" placeholder="例如: 192.168.1.100 或 server.example.com" 
+                                   style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-size: 14px; border-radius: 6px;" required>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 0.875rem;">
+                                    🔌 RDP端口
+                                </label>
+                                <input type="number" id="rdpServerPort" value="3389" min="1" max="65535"
+                                       style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-size: 14px; border-radius: 6px;">
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 0.875rem;">
+                                    📱 本地监听端口
+                                </label>
+                                <input type="number" id="rdpLocalPort" value="13389" min="1" max="65535"
+                                       style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-size: 14px; border-radius: 6px;">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 0.875rem;">
+                                🏷️ 配置名称（可选）
+                            </label>
+                            <input type="text" id="rdpConfigName" placeholder="例如: 办公服务器RDP"
+                                   style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-size: 14px; border-radius: 6px;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                            <button type="button" onclick="generateRdpConfig()" 
+                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 12px 20px; color: #ffffff; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.3s ease;">
+                                ⚡ 生成配置文件
+                            </button>
+                            <button type="button" onclick="copyRdpConfig()" id="copyRdpBtn" disabled
+                                    style="background: #22c55e; border: none; padding: 12px 20px; color: #ffffff; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.3s ease; opacity: 0.5;">
+                                📋 复制配置
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="rdpConfigOutput" style="display: none; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="color: #22c55e; font-size: 1rem; margin: 0;">✅ 配置已生成</h3>
+                            <button onclick="downloadRdpConfig()" 
+                                    style="background: #3b82f6; border: none; padding: 8px 16px; color: #ffffff; font-size: 0.875rem; font-weight: 500; cursor: pointer; border-radius: 6px;">
+                                💾 下载配置文件
+                            </button>
+                        </div>
+                        <pre id="rdpConfigContent" style="background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.875rem; max-height: 400px; line-height: 1.6;"></pre>
+                        
+                        <div style="margin-top: 15px; padding: 12px; background: #e7f3ff; border-left: 4px solid #2196f3; border-radius: 4px;">
+                            <p style="color: #1976d2; font-size: 0.875rem; margin: 0; line-height: 1.6;">
+                                <strong>💡 使用说明：</strong><br>
+                                1. 点击"下载配置文件"保存为 <code>v2ray-rdp.json</code><br>
+                                2. 使用V2RayN导入此配置文件<br>
+                                3. 启动V2Ray服务<br>
+                                4. 打开远程桌面连接到 <code>localhost:<span id="displayLocalPort">13389</span></code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
                     <h2 class="card-title">${t.systemStatus}</h2>
                 <div id="systemStatus" style="margin: 20px 0; padding: 16px; background: #f9fafb; border-radius: 6px;">
                         <div class="status-item">
@@ -3447,6 +3523,143 @@ async function handleSubscriptionPage(request, user = null) {
             window.addEventListener('DOMContentLoaded', function() {
                 initBackground();
             });
+            
+            // ==================== V2Ray RDP配置生成器 ====================
+            let generatedRdpConfig = '';
+            
+            function generateRdpConfig() {
+                const serverHost = document.getElementById('rdpServerHost').value.trim();
+                const serverPort = document.getElementById('rdpServerPort').value;
+                const localPort = document.getElementById('rdpLocalPort').value;
+                const configName = document.getElementById('rdpConfigName').value.trim() || 'RDP加速配置';
+                
+                if (!serverHost) {
+                    alert('❌ 请输入RDP服务器地址');
+                    return;
+                }
+                
+                // 获取当前域名和UUID
+                const currentDomain = window.location.hostname;
+                const pathParts = window.location.pathname.split('/').filter(p => p);
+                const uuidOrPath = pathParts[0] || '你的UUID';
+                
+                // 生成V2Ray配置
+                const config = {
+                    "log": {
+                        "loglevel": "warning"
+                    },
+                    "inbounds": [
+                        {
+                            "tag": "rdp-in",
+                            "port": parseInt(localPort),
+                            "listen": "127.0.0.1",
+                            "protocol": "dokodemo-door",
+                            "settings": {
+                                "address": serverHost,
+                                "port": parseInt(serverPort),
+                                "network": "tcp"
+                            },
+                            "sniffing": {
+                                "enabled": false
+                            }
+                        }
+                    ],
+                    "outbounds": [
+                        {
+                            "tag": "rdp-proxy",
+                            "protocol": "vless",
+                            "settings": {
+                                "vnext": [
+                                    {
+                                        "address": currentDomain,
+                                        "port": 443,
+                                        "users": [
+                                            {
+                                                "id": uuidOrPath,
+                                                "encryption": "none"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "streamSettings": {
+                                "network": "ws",
+                                "security": "tls",
+                                "tlsSettings": {
+                                    "serverName": currentDomain,
+                                    "allowInsecure": false
+                                },
+                                "wsSettings": {
+                                    "path": "/?ed=2048",
+                                    "headers": {
+                                        "Host": currentDomain
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "routing": {
+                        "domainStrategy": "AsIs",
+                        "rules": [
+                            {
+                                "type": "field",
+                                "inboundTag": ["rdp-in"],
+                                "outboundTag": "rdp-proxy"
+                            }
+                        ]
+                    }
+                };
+                
+                generatedRdpConfig = JSON.stringify(config, null, 2);
+                
+                // 显示配置
+                document.getElementById('rdpConfigContent').textContent = generatedRdpConfig;
+                document.getElementById('rdpConfigOutput').style.display = 'block';
+                document.getElementById('displayLocalPort').textContent = localPort;
+                document.getElementById('copyRdpBtn').disabled = false;
+                document.getElementById('copyRdpBtn').style.opacity = '1';
+                
+                // 滚动到结果区域
+                document.getElementById('rdpConfigOutput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            function copyRdpConfig() {
+                if (!generatedRdpConfig) {
+                    alert('❌ 请先生成配置');
+                    return;
+                }
+                
+                navigator.clipboard.writeText(generatedRdpConfig).then(() => {
+                    const btn = document.getElementById('copyRdpBtn');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ 已复制';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    alert('❌ 复制失败: ' + err.message);
+                });
+            }
+            
+            function downloadRdpConfig() {
+                if (!generatedRdpConfig) {
+                    alert('❌ 请先生成配置');
+                    return;
+                }
+                
+                const configName = document.getElementById('rdpConfigName').value.trim() || 'rdp';
+                const fileName = `v2ray-${ configName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-') }.json`;
+                
+                const blob = new Blob([generatedRdpConfig], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
                 
                 // 翻译对象
                 const translations = {
