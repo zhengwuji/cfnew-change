@@ -3099,10 +3099,6 @@ async function handleSubscriptionPage(request, user = null) {
                     <h2 class="card-title">${t.systemStatus}</h2>
                 <div id="systemStatus" style="margin: 20px 0; padding: 16px; background: #f9fafb; border-radius: 6px;">
                         <div class="status-item">
-                            <span class="status-dot"></span>
-                            <span class="status-text" style="color: #666;">${t.checking}</span>
-                        </div>
-                        <div class="status-item">
                             <span class="status-dot" id="regionDot"></span>
                             <span id="regionStatus" style="color: #333; font-weight: 500;">${t.workerRegion}${t.checking}</span>
                         </div>
