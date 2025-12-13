@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDP WebSocket客户端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box h2 {
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .info-box p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        
+        .info-box code {
+            background: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #d63384;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .warning-box h2 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .warning-box p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #555;
+        }
+        
+        .feature-list li:before {
+            content: "✓ ";
+            color: #43e97b;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ RDP WebSocket客户端</h1>
+        <p class="subtitle">通过WebSocket连接加速访问远程桌面</p>
+        
+        <div class="warning-box">
+            <h2>⚠️ 重要提示</h2>
+            <p>此页面仅用于展示概念。要实际使用RDP加速功能，你需要使用专用的客户端工具。</p>
+        </div>
+        
+        <div class="info-box">
+            <h2>📦 推荐的使用方式</h2>
+            <p>使用Node.js桥接脚本将WebSocket转换为本地TCP端口，然后用标准RDP客户端连接：</p>
+            
+            <div class="code-block">
+                <pre>// 安装依赖
+npm install ws
+
+// 创建 rdp-bridge.js
+const WebSocket = require('ws');
+const net = require('net');
+
+const WS_URL = 'wss://your-domain/{UUID}/rdp/{server-id}';
+const LOCAL_PORT = 13389;
+
+const server = net.createServer((socket) => {
+    const ws = new WebSocket(WS_URL);
+    
+    ws.on('open', () => {
+        console.log('✅ WebSocket已连接');
+    });
+    
+    socket.on('data', (data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data);
+        }
+    });
+    
+    ws.on('message', (data) => {
+        socket.write(data);
+    });
+    
+    socket.on('close', () => ws.close());
+    ws.on('close', () => socket.end());
+    ws.on('error', (err) => {
+        console.error('WebSocket错误:', err);
+        socket.end();
+    });
+});
+
+server.listen(LOCAL_PORT, () => {
+    console.log(`🎯 本地RDP桥接服务运行在: localhost:${LOCAL_PORT}`);
+    console.log(`📡 连接到WebSocket: ${WS_URL}`);
+    console.log(`🖥️ 使用RDP客户端连接: localhost:${LOCAL_PORT}`);
+});
+
+// 运行脚本
+// node rdp-bridge.js</pre>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h2>🔧 使用步骤</h2>
+            <ul class="feature-list">
+                <li>在RDP管理界面添加你的远程服务器</li>
+                <li>获取WebSocket URL（格式：wss://域名/rdp/{服务器ID}）</li>
+                <li>创建上面的Node.js桥接脚本</li>
+                <li>将脚本中的 WS_URL 替换为实际的WebSocket地址</li>
+                <li>运行脚本：<code>node rdp-bridge.js</code></li>
+                <li>使用Windows远程桌面连接到 <code>localhost:13389</code></li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h2>💡 其他方案</h2>
+            <p><strong>使用socat（Linux/Mac）：</strong></p>
+            <div class="code-block">
+                <pre># 安装 websocat
+cargo install websocat
+
+# 创建桥接
+websocat -b tcp-l:127.0.0.1:13389 wss://your-domain/{UUID}/rdp/{server-id}
+
+# 然后连接到 localhost:13389</pre>
+            </div>
+        </div>
+        
+        <a href="javascript:history.back()" class="btn">← 返回管理界面</a>
+    </div>
+</body>
+</html>

@@ -36,6 +36,10 @@ let egi = true;
 let kvStore = null;
 let kvConfig = {};
 
+// RDP加速相关配置
+let rdpServers = [];  // RDP服务器列表
+let enableRDP = false;  // RDP功能开关
+
 const regionMapping = {
     'US': ['🇺🇸 美国', 'US', 'United States'],
     'SG': ['🇸🇬 新加坡', 'SG', 'Singapore'],
@@ -777,6 +781,63 @@ export default {
                             }), {
                                 status: 403,
                                 headers: { 'Content-Type': 'application/json' }
+                            });
+                        }
+                    }
+                }
+
+                // RDP管理界面路由
+                if (url.pathname.endsWith('/rdp-admin')) {
+                    const pathParts = url.pathname.split('/').filter(p => p);
+
+                    if (pathParts.length === 2 && pathParts[1] === 'rdp-admin') {
+                        const pathIdentifier = pathParts[0];
+                        let isValid = false;
+
+                        if (cp && cp.trim()) {
+                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                            isValid = (pathIdentifier === cleanCustomPath);
+                        } else {
+                            isValid = (pathIdentifier === envUKey);
+                        }
+
+                        if (isValid) {
+                            return handleRdpAdmin(request, url.hostname);
+                        } else {
+                            return new Response(JSON.stringify({
+                                error: '访问被拒绝',
+                                message: '路径验证失败'
+                            }), {
+                                status: 403,
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        }
+                    }
+                }
+
+                // RDP API路由
+                if (url.pathname.includes('/api/rdp')) {
+                    const pathParts = url.pathname.split('/').filter(p => p);
+                    const apiIndex = pathParts.indexOf('api');
+
+                    if (apiIndex > 0) {
+                        const pathSegments = pathParts.slice(0, apiIndex);
+                        const pathIdentifier = pathSegments.join('/');
+                        let isValid = false;
+
+                        if (cp && cp.trim()) {
+                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                            isValid = (pathIdentifier === cleanCustomPath);
+                        } else {
+                            isValid = (pathIdentifier === envUKey);
+                        }
+
+                        if (isValid) {
+                            return await handleRdpAPI(request);
+                        } else {
+                            return new Response(JSON.stringify({ error: '路径验证失败' }), {
+                                status: 403,
+                                headers: { 'Content-Type': 'application/json; charset=utf-8' }
                             });
                         }
                     }
@@ -6059,4 +6120,484 @@ async function fetchPreferredAPI(urls, defaultPort = '443', timeout = 3000) {
         } catch (e) { }
     }));
     return Array.from(results);
+}
+
+// ==================== RDP加速功能 ====================
+
+/**
+ * 处理RDP管理界面
+ */
+async function handleRdpAdmin(request, hostname) {
+    const rdpAdminHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDP加速管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .server-list {
+            margin-bottom: 30px;
+        }
+        
+        .server-item {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .server-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .server-info h3 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .server-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        
+        .server-actions button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .server-actions button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .server-actions button.delete {
+            background: #ff6b6b;
+        }
+        
+        .server-actions button.delete:hover {
+            background: #ee5a52;
+        }
+        
+        .add-server {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .add-server h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e4e8;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .submit-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .usage-guide {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .usage-guide h2 {
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .usage-guide ol {
+            margin-left: 20px;
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        .usage-guide code {
+            background: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #d63384;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .ws-url {
+            background: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ RDP加速管理</h1>
+        <p class="subtitle">管理远程桌面服务器连接</p>
+        
+        <div class="add-server">
+            <h2>添加RDP服务器</h2>
+            <form id="addServerForm">
+                <div class="form-group">
+                    <label for="serverName">服务器名称</label>
+                    <input type="text" id="serverName" name="serverName" placeholder="例如：办公服务器" required>
+                </div>
+                <div class="form-group">
+                    <label for="serverHost">服务器地址</label>
+                    <input type="text" id="serverHost" name="serverHost" placeholder="例如：192.168.1.100 或 server.example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="serverPort">RDP端口</label>
+                    <input type="number" id="serverPort" name="serverPort" placeholder="默认：3389" value="3389" required>
+                </div>
+                <button type="submit" class="submit-btn">➕ 添加服务器</button>
+            </form>
+        </div>
+        
+        <div class="server-list">
+            <h2 style="margin-bottom: 20px;">服务器列表</h2>
+            <div id="serverListContainer">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>暂无RDP服务器</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="usage-guide">
+            <h2>📖 使用说明</h2>
+            <ol>
+                <li>在上方表单中添加你的RDP服务器信息</li>
+                <li>添加后会在"服务器列表"中显示</li>
+                <li>点击"连接"按钮会打开RDP客户端页面</li>
+                <li>使用专用客户端工具连接到WebSocket URL进行加速访问</li>
+                <li>WebSocket URL格式：<div class="ws-url">wss://${hostname}/rdp/{服务器ID}</div></li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = window.location.pathname.replace('/rdp-admin', '/api/rdp');
+        
+        // 加载服务器列表
+        async function loadServers() {
+            try {
+                const response = await fetch(API_BASE + '-servers');
+                const data = await response.json();
+                
+                const container = document.getElementById('serverListContainer');
+                
+                if (!data.servers || data.servers.length === 0) {
+                    container.innerHTML = \`
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p>暂无RDP服务器</p>
+                        </div>
+                    \`;
+                    return;
+                }
+                
+                container.innerHTML = data.servers.map(server => \`
+                    <div class="server-item">
+                        <div class="server-info">
+                            <h3>\${server.name}</h3>
+                            <p>地址：\${server.host}:\${server.port}</p>
+                            <p>WebSocket: wss://${hostname}/rdp/\${server.id}</p>
+                            <p style="font-size: 12px; color: #999;">添加时间：\${new Date(server.addedAt).toLocaleString('zh-CN')}</p>
+                        </div>
+                        <div class="server-actions">
+                            <button onclick="connectServer('\${server.id}')">🔗 连接</button>
+                            <button class="delete" onclick="deleteServer('\${server.id}')">🗑️ 删除</button>
+                        </div>
+                    </div>
+                \`).join('');
+            } catch (error) {
+                console.error('加载服务器列表失败:', error);
+            }
+        }
+        
+        // 添加服务器
+        document.getElementById('addServerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const serverData = {
+                name: formData.get('serverName'),
+                host: formData.get('serverHost'),
+                port: parseInt(formData.get('serverPort'))
+            };
+            
+            try {
+                const response = await fetch(API_BASE + '-servers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(serverData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ 服务器添加成功！');
+                    e.target.reset();
+                    document.getElementById('serverPort').value = '3389';
+                    loadServers();
+                } else {
+                    alert('❌ 添加失败：' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('❌ 添加失败：' + error.message);
+            }
+        });
+        
+        // 连接服务器
+        function connectServer(id) {
+            const wsUrl = \`wss://${hostname}/rdp/\${id}\`;
+            alert(\`WebSocket连接地址：\\n\${wsUrl}\\n\\n请使用RDP客户端工具连接此地址\`);
+            // 这里可以打开一个新窗口到客户端页面
+            // window.open('/rdp-client.html?server=' + id, '_blank');
+        }
+        
+        // 删除服务器
+        async function deleteServer(id) {
+            if (!confirm('确定要删除这个服务器吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(API_BASE + '-servers/' + id, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ 服务器已删除');
+                    loadServers();
+                } else {
+                    alert('❌ 删除失败：' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                alert('❌ 删除失败：' + error.message);
+            }
+        }
+        
+        // 页面加载时加载服务器列表
+        loadServers();
+    </script>
+</body>
+</html>`;
+
+    return new Response(rdpAdminHTML, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
+}
+
+/**
+ * 处理RDP API请求
+ */
+async function handleRdpAPI(request) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // GET /api/rdp-servers - 获取服务器列表
+    if (request.method === 'GET' && path.endsWith('/rdp-servers')) {
+        return new Response(JSON.stringify({
+            success: true,
+            servers: rdpServers
+        }), {
+            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+    }
+
+    // POST /api/rdp-servers - 添加服务器
+    if (request.method === 'POST' && path.endsWith('/rdp-servers')) {
+        try {
+            const data = await request.json();
+
+            if (!data.name || !data.host || !data.port) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    error: '缺少必要参数：name, host, port'
+                }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                });
+            }
+
+            const newServer = {
+                id: generateRandomId(),
+                name: data.name,
+                host: data.host,
+                port: data.port,
+                addedAt: new Date().toISOString()
+            };
+
+            rdpServers.push(newServer);
+
+            return new Response(JSON.stringify({
+                success: true,
+                server: newServer
+            }), {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: error.message
+            }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            });
+        }
+    }
+
+    // DELETE /api/rdp-servers/{id} - 删除服务器
+    if (request.method === 'DELETE' && path.includes('/rdp-servers/')) {
+        const serverId = path.split('/rdp-servers/')[1];
+        const index = rdpServers.findIndex(s => s.id === serverId);
+
+        if (index === -1) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: '服务器不存在'
+            }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            });
+        }
+
+        rdpServers.splice(index, 1);
+
+        return new Response(JSON.stringify({
+            success: true,
+            message: '服务器已删除'
+        }), {
+            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+    }
+
+    return new Response(JSON.stringify({
+        success: false,
+        error: '不支持的API端点'
+    }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' }
+    });
+}
+
+/**
+ * 生成随机ID
+ */
+function generateRandomId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
