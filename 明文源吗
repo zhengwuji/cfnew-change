@@ -1782,46 +1782,65 @@ async function fetchRandomJavdbVideo() {
     const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
     const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
     const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
-    const code = `${randomSeries}-${randomNumber}`;
-
-    // 降级方案：DMM缩略图
-    const codeForUrl = code.toLowerCase().replace('-', '');
-    const fallbackCover = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
-
-    // 尝试从详情页获取大图
+    const code = randomSeries + '-' + randomNumber;
+    
+    // 降级方案：DMM缩略图（修正格式）
+    const codeForDmm = code.toLowerCase().replace('-', '');
+    const fallbackCover = 'https://pics.dmm.co.jp/digital/video/' + codeForDmm + '/' + codeForDmm + 'pl.jpg';
+    
+    // 尝试从javdb获取详情页链接和大图
     try {
-        const detailUrl = `https://javdb.com/search?q=${code}`;
-        const response = await fetch(detailUrl, {
+        const searchUrl = 'https://javdb.com/search?q=' + code;
+        const searchResponse = await fetch(searchUrl, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
             }
         });
-
-        if (response.ok) {
-            const html = await response.text();
-
-            // 尝试提取大图
-            const imgMatches = html.match(/<img[^>]+src="([^"]+)"[^>]*>/g);
-            if (imgMatches) {
-                for (const imgTag of imgMatches) {
-                    const srcMatch = imgTag.match(/src="([^"]+)"/);
-                    if (srcMatch) {
-                        let imgSrc = srcMatch[1];
-                        // 过滤掉小图标
-                        if (!imgSrc.includes('icon') && !imgSrc.includes('logo') && !imgSrc.includes('avatar')) {
-                            if (!imgSrc.startsWith('http')) {
-                                imgSrc = `https:${imgSrc}`;
+        
+        if (searchResponse.ok) {
+            const searchHtml = await searchResponse.text();
+            
+            // 从搜索结果中提取第一个视频的详情页链接
+            const detailLinkMatch = searchHtml.match(/<a[^>]+href="(\/v\/[^"]+)"/);
+            if (detailLinkMatch) {
+                const detailPath = detailLinkMatch[1];
+                const detailUrl = 'https://javdb.com' + detailPath;
+                
+                // 访问详情页获取大图
+                const detailResponse = await fetch(detailUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    }
+                });
+                
+                if (detailResponse.ok) {
+                    const detailHtml = await detailResponse.text();
+                    
+                    // 提取详情页的大图
+                    const imgMatches = detailHtml.match(/<img[^>]+src="([^"]+)"[^>]*>/g);
+                    if (imgMatches) {
+                        for (const imgTag of imgMatches) {
+                            const srcMatch = imgTag.match(/src="([^"]+)"/);
+                            if (srcMatch) {
+                                let imgSrc = srcMatch[1];
+                                // 过滤掉小图标，找封面大图
+                                if (imgSrc.includes('cover') || (imgSrc.includes('.jpg') && !imgSrc.includes('icon') && !imgSrc.includes('logo') && !imgSrc.includes('avatar'))) {
+                                    if (!imgSrc.startsWith('http')) {
+                                        imgSrc = 'https:' + imgSrc;
+                                    }
+                                    // 找到大图，返回详情页链接
+                                    return {
+                                        success: true,
+                                        code: code,
+                                        cover: imgSrc,
+                                        title: code,
+                                        link: detailUrl,
+                                        source: 'javdb-detail'
+                                    };
+                                }
                             }
-                            // 找到大图，返回
-                            return {
-                                success: true,
-                                code: code,
-                                cover: imgSrc,
-                                title: code,
-                                link: detailUrl,
-                                source: 'javdb-large'
-                            };
                         }
                     }
                 }
@@ -1830,14 +1849,14 @@ async function fetchRandomJavdbVideo() {
     } catch (error) {
         // 爬取失败，继续使用降级方案
     }
-
+    
     // 降级方案：返回 DMM 缩略图
     return {
         success: true,
         code: code,
         cover: fallbackCover,
         title: code,
-        link: `https://javdb.com/search?q=${code}`,
+        link: 'https://javdb.com/search?q=' + code,
         source: 'dmm-fallback'
     };
 }
