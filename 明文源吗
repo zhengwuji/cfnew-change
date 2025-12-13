@@ -866,6 +866,7 @@ export default {
             loading.style.display = 'block';
             
             try {
+                // 步骤1: 从后端获取随机番号
                 const response = await fetch('/api/random-video');
                 const data = await response.json();
                 
@@ -873,33 +874,68 @@ export default {
                     throw new Error('API failed');
                 }
                 
-                currentVideoData = data;
+                const code = data.code;
+                const detailLink = 'https://www.javbus.com/' + code;
+                
+                // 步骤2: 用浏览器直接访问javbus获取封面
+                let coverUrl = '';
+                try {
+                    const javbusResponse = await fetch(detailLink, {
+                        mode: 'cors',
+                        credentials: 'omit'
+                    });
+                    
+                    if (javbusResponse.ok) {
+                        const html = await javbusResponse.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // 查找封面图
+                        const bigImage = doc.querySelector('a.bigImage img');
+                        if (bigImage) {
+                            coverUrl = bigImage.src;
+                        }
+                    }
+                } catch (corsError) {
+                    console.log('CORS blocked, using gradient fallback');
+                }
+                
+                currentVideoData = {
+                    code: code,
+                    cover: coverUrl,
+                    link: detailLink
+                };
                 
                 // 更新UI
                 bgImg.style.opacity = '0';
                 setTimeout(function() {
-                    // 检查是否为CSS渐变
-                    if (data.cover && data.cover.startsWith('CSS_GRADIENT:')) {
-                        const gradient = data.cover.replace('CSS_GRADIENT:', '');
-                        bgImg.style.background = gradient;
-                        bgImg.src = '';  // 清空src
-                        bgImg.style.opacity = '1';
-                    } else {
+                    if (coverUrl) {
                         bgImg.style.background = '';
-                        bgImg.src = data.cover;
+                        bgImg.src = coverUrl;
                         bgImg.onload = function() {
                             bgImg.style.opacity = '1';
                         };
                         bgImg.onerror = function() {
-                            // 降级到纯色背景
+                            // 降级到CSS渐变
                             bgImg.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                             bgImg.src = '';
                             bgImg.style.opacity = '1';
                         };
+                    } else {
+                        // CORS拦截，使用CSS渐变
+                        const gradients = [
+                            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+                        ];
+                        const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+                        bgImg.style.background = randomGradient;
+                        bgImg.src = '';
+                        bgImg.style.opacity = '1';
                     }
                 }, 300);
                 
-                codeEl.textContent = data.code;
+                codeEl.textContent = code;
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -1786,91 +1822,18 @@ async function fetchDynamicIPs() {
     return [];
 }
 
-// 从 javlibrary.com 和 javbus.com 获取随机番号
+// 生成随机番号（前端自行抓取）
 async function fetchRandomJavdbVideo() {
     // 预定义的番号列表
     const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
     const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
     const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
     const code = randomSeries + '-' + randomNumber;
-    const codeForUrl = code.toLowerCase().replace('-', '');
-    
-    // 默认链接和封面
-    let detailLink = 'https://www.javbus.com/' + code;
-    let coverUrl = '';
-    
-    // 方案1: 尝试从 javlibrary 获取
-    try {
-        const javlibUrl = 'https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=' + code;
-        const response = await fetch(javlibUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        
-        if (response.ok) {
-            const html = await response.text();
-            // 提取封面图
-            const imgMatch = html.match(/<img[^>]+src="([^"]+)"[^>]*alt="[^"]*' + code + '[^"]*"/i);
-            if (imgMatch) {
-                coverUrl = imgMatch[1];
-                if (!coverUrl.startsWith('http')) {
-                    coverUrl = 'https://www.javlibrary.com' + coverUrl;
-                }
-                // 提取详情页链接
-                const linkMatch = html.match(/<a[^>]+href="([^"]+)"[^>]*>' + code + '/i);
-                if (linkMatch) {
-                    detailLink = 'https://www.javlibrary.com/cn/' + linkMatch[1];
-                }
-            }
-        }
-    } catch (error) {
-        // javlibrary 失败，尝试 javbus
-    }
-    
-    // 方案2: 如果 javlibrary 失败，尝试 javbus
-    if (!coverUrl) {
-        try {
-            const javbusUrl = 'https://www.javbus.com/' + code;
-            const response = await fetch(javbusUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-            
-            if (response.ok) {
-                const html = await response.text();
-                const imgMatch = html.match(/<a[^>]+class="bigImage"[^>]*><img[^>]+src="([^"]+)"/);
-                if (imgMatch) {
-                    coverUrl = imgMatch[1];
-                    detailLink = javbusUrl;
-                }
-            }
-        } catch (error) {
-            // javbus 也失败
-        }
-    }
-    
-    // 降级方案: 使用CSS渐变
-    if (!coverUrl) {
-        const gradients = [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-        ];
-        const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-        coverUrl = 'CSS_GRADIENT:' + randomGradient;
-    }
-    
+
     return {
         success: true,
         code: code,
-        cover: coverUrl,
-        title: code,
-        link: detailLink,
-        source: coverUrl.startsWith('CSS_GRADIENT:') ? 'css-gradient' : 'javlibrary-or-javbus'
+        message: 'client-scrape'  // 告诉前端自行抓取
     };
 }
 
