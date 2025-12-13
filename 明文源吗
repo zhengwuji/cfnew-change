@@ -2831,9 +2831,6 @@ async function handleSubscriptionPage(request, user = null) {
                         <a href="/api-docs" style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)';">
                             📡 API文档
                         </a>
-                        <a href="/background" style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3); margin-left: 10px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(240, 147, 251, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(240, 147, 251, 0.3)';">
-                            🎨 背景切换
-                        </a>
                     </div>
             </div>
             <div class="card">
@@ -3168,23 +3165,29 @@ async function handleSubscriptionPage(request, user = null) {
             // 远程配置URL（硬编码）
             var REMOTE_CONFIG_URL = "${remoteConfigUrl}";
             
-            // 背景图片数据（高清女优背景，包含番号）
-            // 注意：请将下面的URL替换为您实际的高清女优图片URL
-            // 格式：{ url: '图片URL', code: '番号' }
-            const backgroundImages = [
-                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-001' },
-                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-002' },
-                { url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=100', code: 'SSIS-003' },
-                { url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1920&q=100', code: 'SSIS-004' },
-                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-005' },
-                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-006' },
-                { url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=100', code: 'SSIS-007' },
-                { url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1920&q=100', code: 'SSIS-008' },
-                { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=100', code: 'SSIS-009' },
-                { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=100', code: 'SSIS-010' }
-                // 您可以在这里添加更多背景图片
-                // 例如：{ url: 'https://your-image-url.com/image.jpg', code: 'SSIS-011' },
+            // 背景图片数据 - 使用CSS渐变
+            const gradients = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)'
             ];
+            
+            let currentVideoData = null;
+            
+            // 生成随机番号
+            function generateRandomCode() {
+                const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
+                const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
+                const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+                return randomSeries + '-' + randomNumber;
+            }
             
             // 当前背景索引
             let currentBgIndex = -1;
@@ -3204,22 +3207,31 @@ async function handleSubscriptionPage(request, user = null) {
             
             // 切换背景
             function changeBackground() {
-                // 随机选择一个新的背景（确保不重复）
+                // 生成新番号
+                const code = generateRandomCode();
+                const detailLink = 'https://www.javbus.com/' + code;
+                
+                // 随机选择一个新的渐变（确保不重复）
                 let newIndex;
                 do {
-                    newIndex = Math.floor(Math.random() * backgroundImages.length);
-                } while (newIndex === currentBgIndex && backgroundImages.length > 1);
+                    newIndex = Math.floor(Math.random() * gradients.length);
+                } while (newIndex === currentBgIndex && gradients.length > 1);
                 
                 currentBgIndex = newIndex;
-                const bgData = backgroundImages[currentBgIndex];
+                const gradient = gradients[currentBgIndex];
                 
-                // 设置背景图片
-                document.body.style.backgroundImage = 'url(' + bgData.url + ')';
+                currentVideoData = {
+                    code: code,
+                    link: detailLink
+                };
                 
-                // 更新番号信息
+                // 设置背景渐变
+                document.body.style.backgroundImage = gradient;
+                
+                // 更新番号信息（可点击跳转）
                 const bgInfo = document.getElementById('bgInfo');
                 if (bgInfo) {
-                    bgInfo.textContent = '番号: ' + bgData.code;
+                    bgInfo.innerHTML = '番号: <a href="' + detailLink + '" target="_blank" style="color: inherit; text-decoration: underline;">' + code + '</a>';
                 }
                 
                 // 保存到localStorage
@@ -3228,18 +3240,8 @@ async function handleSubscriptionPage(request, user = null) {
             
             // 初始化背景
             function initBackground() {
-                loadBackgroundIndex();
-                if (currentBgIndex >= 0 && currentBgIndex < backgroundImages.length) {
-                    const bgData = backgroundImages[currentBgIndex];
-                    document.body.style.backgroundImage = 'url(' + bgData.url + ')';
-                    const bgInfo = document.getElementById('bgInfo');
-                    if (bgInfo) {
-                        bgInfo.textContent = '番号: ' + bgData.code;
-                    }
-                } else {
-                    // 如果没有保存的背景，随机选择一个
-                    changeBackground();
-                }
+                // 直接切换一次背景
+                changeBackground();
             }
             
             // 页面加载时初始化背景
