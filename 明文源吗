@@ -1,6 +1,6 @@
 import { connect } from 'cloudflare:sockets';
 
-let at = '351c9981-04b6-4103-aa4b-864aa9c91469';
+let at = '9ac70987-feda-4925-83a2-9f3328c28f4a';
 let envUKey = ''; // 保存原始环境变量u的值（支持大小写）
 let fallbackAddress = '';
 let fallbackPort = '443';
