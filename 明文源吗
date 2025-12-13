@@ -3540,7 +3540,7 @@ async function handleSubscriptionPage(request, user = null) {
                 
                 // 获取当前域名和UUID
                 const currentDomain = window.location.hostname;
-                const pathParts = window.location.pathname.split('/').filter(p => p);
+                const pathParts = window.location.pathname.split('/').filter(function(p) { return p; });
                 const uuidOrPath = pathParts[0] || '你的UUID';
                 
                 // 生成V2Ray配置
@@ -3629,14 +3629,14 @@ async function handleSubscriptionPage(request, user = null) {
                     return;
                 }
                 
-                navigator.clipboard.writeText(generatedRdpConfig).then(() => {
+                navigator.clipboard.writeText(generatedRdpConfig).then(function() {
                     const btn = document.getElementById('copyRdpBtn');
                     const originalText = btn.innerHTML;
                     btn.innerHTML = '✅ 已复制';
-                    setTimeout(() => {
+                    setTimeout(function() {
                         btn.innerHTML = originalText;
                     }, 2000);
-                }).catch(err => {
+                }).catch(function(err) {
                     alert('❌ 复制失败: ' + err.message);
                 });
             }
@@ -3648,7 +3648,7 @@ async function handleSubscriptionPage(request, user = null) {
                 }
                 
                 const configName = document.getElementById('rdpConfigName').value.trim() || 'rdp';
-                const fileName = `v2ray-${ configName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-') }.json`;
+                const fileName = 'v2ray-' + configName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-') + '.json';
                 
                 const blob = new Blob([generatedRdpConfig], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
