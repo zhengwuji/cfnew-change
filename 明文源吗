@@ -852,12 +852,10 @@ export default {
     <script>
         let currentVideoData = null;
         
-        // 页面加载时获取初始背景
         window.addEventListener('DOMContentLoaded', function() {
             changeBackground();
         });
         
-        // 更换背景函数 - 客户端直接抓取
         async function changeBackground() {
             const btn = document.getElementById('changeBtn');
             const loading = document.getElementById('loading');
@@ -868,40 +866,31 @@ export default {
             loading.style.display = 'block';
             
             try {
-                // 获取随机番号
                 const response = await fetch('/api/random-video');
                 const data = await response.json();
                 
                 if (!data.success || !data.code) {
-                    throw new Error('Failed to get code');
+                    throw new Error('API failed');
                 }
                 
-                const code = data.code;
-                
-                // 直接从番号构造DMM图片URL
-                const codeForUrl = code.toLowerCase().replace('-', '');
-                const coverUrl = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
-                
-                currentVideoData = {
-                    code: code,
-                    cover: coverUrl,
-                    link: `https://javdb.com/search?q=${code}`
-                };
+                currentVideoData = data;
                 
                 // 更新UI
                 bgImg.style.opacity = '0';
                 setTimeout(() => {
-                    bgImg.src = coverUrl;
+                    bgImg.src = data.cover;
                     bgImg.onload = () => {
                         bgImg.style.opacity = '1';
                     };
                     bgImg.onerror = () => {
-                        bgImg.src = 'https://via.placeholder.com/800x600/1a1a2e/ffffff?text=' + code;
+                        // 如果图片加载失败，尝试降级URL
+                        const codeForUrl = data.code.toLowerCase().replace('-', '');
+                        bgImg.src = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
                         bgImg.style.opacity = '1';
                     };
                 }, 300);
                 
-                codeEl.textContent = code;
+                codeEl.textContent = data.code;
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -913,7 +902,6 @@ export default {
             }
         }
         
-        // 点击番号打开链接
         function openVideoLink() {
             if (currentVideoData && currentVideoData.link) {
                 window.open(currentVideoData.link, '_blank');
@@ -1788,20 +1776,69 @@ async function fetchDynamicIPs() {
     return [];
 }
 
-// 从 javdb.com 获取随机番号（仅番号，不抓取图片）
+// 从 javdb.com 获取随机番号和封面图（优先大图，降级缩略图）
 async function fetchRandomJavdbVideo() {
-    // 预定义的番号列表（常见系列）
+    // 预定义的番号列表
     const seriesList = ['SSIS', 'SSNI', 'STARS', 'CAWD', 'MIDV', 'SAME', 'REAL', 'PRED', 'ABW', 'FSDSS'];
     const randomSeries = seriesList[Math.floor(Math.random() * seriesList.length)];
     const randomNumber = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
     const code = `${randomSeries}-${randomNumber}`;
     
+    // 降级方案：DMM缩略图
+    const codeForUrl = code.toLowerCase().replace('-', '');
+    const fallbackCover = `https://pics.dmm.co.jp/digital/video/${codeForUrl}/${codeForUrl}pl.jpg`;
+    
+    // 尝试从详情页获取大图
+    try {
+        const detailUrl = `https://javdb.com/search?q=${code}`;
+        const response = await fetch(detailUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
+        });
+        
+        if (response.ok) {
+            const html = await response.text();
+            
+            // 尝试提取大图
+            const imgMatches = html.match(/<img[^>]+src="([^"]+)"[^>]*>/g);
+            if (imgMatches) {
+                for (const imgTag of imgMatches) {
+                    const srcMatch = imgTag.match(/src="([^"]+)"/);
+                    if (srcMatch) {
+                        let imgSrc = srcMatch[1];
+                        // 过滤掉小图标
+                        if (!imgSrc.includes('icon') && !imgSrc.includes('logo') && !imgSrc.includes('avatar')) {
+                            if (!imgSrc.startsWith('http')) {
+                                imgSrc = `https:${imgSrc}`;
+                            }
+                            // 找到大图，返回
+                            return {
+                                success: true,
+                                code: code,
+                                cover: imgSrc,
+                                title: code,
+                                link: detailUrl,
+                                source: 'javdb-large'
+                            };
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        // 爬取失败，继续使用降级方案
+    }
+    
+    // 降级方案：返回 DMM 缩略图
     return {
         success: true,
         code: code,
-        // 返回 javdb 搜索链接，让前端浏览器自己访问
+        cover: fallbackCover,
+        title: code,
         link: `https://javdb.com/search?q=${code}`,
-        message: 'Use client-side scraping'
+        source: 'dmm-fallback'
     };
 }
 
