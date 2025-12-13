@@ -534,6 +534,12 @@
                     });
                 }
             
+            // 优先处理WebSocket升级请求（必须在其他路由之前）
+            const upgradeHeader = request.headers.get('Upgrade');
+            if (upgradeHeader && upgradeHeader.toLowerCase() === atob('d2Vic29ja2V0')) {
+                return await handleWsRequest(request);
+            }
+            
             if (request.method === 'POST' && ex) {
                 const r = await handleXhttpPost(request);
                 if (r) {
@@ -550,10 +556,6 @@
                 }
                 return new Response('Internal Server Error', { status: 500 });
             }
-
-            if (request.headers.get('Upgrade') === atob('d2Vic29ja2V0')) {
-                return await handleWsRequest(request);
-                }
                 
                 if (request.method === 'GET') {
                     // 处理 /{UUID}/region 或 /{自定义路径}/region
@@ -740,28 +742,14 @@
                     radial-gradient(circle at 20% 50%, rgba(0, 80, 0, 0.3) 0%, transparent 50%),
                     radial-gradient(circle at 80% 80%, rgba(0, 120, 0, 0.2) 0%, transparent 50%),
                     linear-gradient(135deg, #000000 0%, #001a00 25%, #000000 50%, #002200 75%, #000000 100%);
-                background-size: 200% 200%;
+                background-size: 100% 100%;
+                background-attachment: fixed;
+                background-repeat: no-repeat;
+                background-position: center center;
                 z-index: -1;
-                animation: bg-pulse 10s ease-in-out infinite;
                 image-rendering: -webkit-optimize-contrast;
                 image-rendering: crisp-edges;
                 image-rendering: pixelated;
-            }
-            @keyframes bg-pulse {
-                0%, 100% { 
-                    background: 
-                        radial-gradient(circle at 20% 50%, rgba(0, 80, 0, 0.3) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(0, 120, 0, 0.2) 0%, transparent 50%),
-                        linear-gradient(135deg, #000000 0%, #001a00 25%, #000000 50%, #002200 75%, #000000 100%);
-                    background-size: 200% 200%;
-                }
-                50% { 
-                    background: 
-                        radial-gradient(circle at 80% 50%, rgba(0, 100, 0, 0.35) 0%, transparent 50%),
-                        radial-gradient(circle at 20% 80%, rgba(0, 140, 0, 0.25) 0%, transparent 50%),
-                        linear-gradient(135deg, #000000 0%, #003300 25%, #000000 50%, #004400 75%, #000000 100%);
-                    background-size: 200% 200%;
-                }
             }
             .matrix-rain {
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -773,14 +761,13 @@
                     transparent 2px,
                     transparent 3px
                 );
-                animation: matrix-fall 25s linear infinite;
+                background-size: 100% 100%;
+                background-attachment: fixed;
+                background-repeat: no-repeat;
+                background-position: center center;
                 z-index: -1;
                 opacity: 0.7;
                 image-rendering: crisp-edges;
-            }
-            @keyframes matrix-fall {
-                0% { transform: translateY(-100%) translateX(0); }
-                100% { transform: translateY(100vh) translateX(0); }
             }
             .matrix-code-rain {
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -1977,17 +1964,14 @@
                     radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.98) 0%, transparent 40%),
                     radial-gradient(circle at 100% 100%, rgba(34, 197, 94, 0.05) 0%, transparent 50%),
                     linear-gradient(135deg, #ffffff 0%, #f9fafb 25%, #ffffff 50%, #f0fdf4 75%, #ffffff 100%);
-                background-size: 200% 200%;
+                background-size: 100% 100%;
+                background-attachment: fixed;
+                background-repeat: no-repeat;
+                background-position: center center;
                 color: #1f2937; min-height: 100vh;
                 overflow-x: hidden; position: relative;
-                background-attachment: fixed;
-                animation: subtleBgMove 20s ease-in-out infinite;
                 image-rendering: -webkit-optimize-contrast;
                 image-rendering: crisp-edges;
-            }
-            @keyframes subtleBgMove {
-                0%, 100% { background-position: 0% 0%; }
-                50% { background-position: 100% 100%; }
             }
             body::before {
                 content: '';
@@ -2003,6 +1987,10 @@
                         rgba(34, 197, 94, 0.02) 1px, 
                         rgba(34, 197, 94, 0.02) 2px
                     );
+                background-size: 100% 100%;
+                background-attachment: fixed;
+                background-repeat: no-repeat;
+                background-position: center center;
                 z-index: 0;
                 pointer-events: none;
                 image-rendering: crisp-edges;
