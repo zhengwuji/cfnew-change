@@ -3001,6 +3001,25 @@ async function handleSubscriptionPage(request, user = null) {
                 <div class="subscription-url" id="clientSubscriptionUrl"></div>
             </div>
             <div class="card">
+                    <h2 class="card-title">🛠️ 系统功能</h2>
+                <div class="client-grid">
+                    <button class="client-btn" onclick="window.open(window.location.pathname + '/rdp-admin', '_blank')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        🖥️ RDP加速
+                    </button>
+                    <button class="client-btn" onclick="window.open('/api-docs', '_blank')" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        📡 API文档
+                    </button>
+                    <button class="client-btn" onclick="window.open('/background', '_blank')" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        🎨 背景切换
+                    </button>
+                </div>
+                <div style="margin-top: 15px; padding: 12px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="color: #666; font-size: 0.875rem; margin-bottom: 8px;">
+                        <strong style="color: #667eea;">💡 RDP加速：</strong>通过WebSocket隧道加速访问远程桌面服务器
+                    </div>
+                </div>
+            </div>
+            <div class="card">
                     <h2 class="card-title">${t.systemStatus}</h2>
                 <div id="systemStatus" style="margin: 20px 0; padding: 16px; background: #f9fafb; border-radius: 6px;">
                         <div class="status-item">
