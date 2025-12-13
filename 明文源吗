@@ -1558,6 +1558,8 @@
 
     async function handleWsRequest(request) {
         try {
+            console.log('[WS-DEBUG] WebSocket request received');
+            
             // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
             if (!currentWorkerRegion || currentWorkerRegion === '') {
                 if (manualWorkerRegion && manualWorkerRegion.trim()) {
@@ -1566,22 +1568,48 @@
                     currentWorkerRegion = await detectWorkerRegion(request);
                 }
             }
+            console.log('[WS-DEBUG] Worker region:', currentWorkerRegion);
+            console.log('[WS-DEBUG] ev (VLESS enabled):', ev);
+            console.log('[WS-DEBUG] et (Trojan enabled):', et);
+            console.log('[WS-DEBUG] ex (xhttp enabled):', ex);
+            console.log('[WS-DEBUG] UUID (at):', at);
             
             const wsPair = new WebSocketPair();
             const [clientSock, serverSock] = Object.values(wsPair);
             serverSock.accept();
+            console.log('[WS-DEBUG] WebSocket pair created and accepted');
 
         let remoteConnWrapper = { socket: null };
         let isDnsQuery = false;
         let protocolType = null; 
+        let firstChunkReceived = false;
 
         const earlyData = request.headers.get(atob('c2VjLXdlYnNvY2tldC1wcm90b2NvbA==')) || '';
+        console.log('[WS-DEBUG] Early data header length:', earlyData.length);
         const readable = makeReadableStream(serverSock, earlyData);
+
+        // 添加 WebSocket 事件监听器用于调试
+        serverSock.addEventListener('close', (event) => {
+            console.log('[WS-DEBUG] WebSocket closed, code:', event.code, 'reason:', event.reason);
+        });
+        
+        serverSock.addEventListener('error', (error) => {
+            console.log('[WS-DEBUG] WebSocket error:', error);
+        });
 
         readable.pipeTo(new WritableStream({
             async write(chunk) {
-                if (isDnsQuery) return await forwardUDP(chunk, serverSock, null);
+                if (!firstChunkReceived) {
+                    firstChunkReceived = true;
+                    console.log('[WS-DEBUG] First chunk received, size:', chunk.byteLength, 'protocolType:', protocolType);
+                }
+                
+                if (isDnsQuery) {
+                    console.log('[WS-DEBUG] Forwarding UDP (DNS)');
+                    return await forwardUDP(chunk, serverSock, null);
+                }
                 if (remoteConnWrapper.socket) {
+                    console.log('[WS-DEBUG] Forwarding to established connection');
                     const writer = remoteConnWrapper.socket.writable.getWriter();
                     await writer.write(chunk);
                     writer.releaseLock();
@@ -1589,22 +1617,36 @@
                 }
                 
                 if (!protocolType) {
+                    console.log('[WS-DEBUG] Protocol not detected yet, chunk size:', chunk.byteLength);
+                    
                     // 如果数据块太小（小于最小协议要求），等待更多数据
                     if (chunk.byteLength < 24) {
+                        console.log('[WS-DEBUG] Chunk too small, waiting for more data');
                         return; // 等待更多数据，不抛出错误
                     }
                     
                     // 尝试解析 VLESS 协议
                     if (ev && chunk.byteLength >= 24) {
+                        console.log('[WS-DEBUG] Attempting VLESS parse, chunk size:', chunk.byteLength);
                         const vlessResult = parseWsPacketHeader(chunk, at);
+                        console.log('[WS-DEBUG] VLESS parse result:', JSON.stringify({
+                            hasError: vlessResult.hasError,
+                            message: vlessResult.message || 'OK'
+                        }));
+                        
                         if (!vlessResult.hasError) {
                             protocolType = 'vless';
+                            console.log('[WS-DEBUG] VLESS protocol detected successfully');
                             const { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
+                            console.log('[WS-DEBUG] VLESS target:', hostname + ':' + port, 'UDP:', isUDP);
+                            
                             if (isUDP) {
                                 if (port === 53) {
                                     isDnsQuery = true;
+                                    console.log('[WS-DEBUG] UDP DNS query detected');
                                 } else {
                                     // UDP 仅支持 DNS (端口 53)
+                                    console.log('[WS-DEBUG] UDP non-DNS port rejected:', port);
                                     closeSocketQuietly(serverSock);
                                     return;
                                 }
@@ -1615,33 +1657,50 @@
                                 await forwardUDP(rawData, serverSock, respHeader);
                                 return;
                             }
+                            console.log('[WS-DEBUG] Forwarding TCP connection to:', hostname + ':' + port);
                             await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper);
                             return;
+                        } else {
+                            console.log('[WS-DEBUG] VLESS parse failed:', vlessResult.message);
                         }
                     }
                     
                     // 尝试解析 Trojan 协议
                     if (et && chunk.byteLength >= 56) {
+                        console.log('[WS-DEBUG] Attempting Trojan parse, chunk size:', chunk.byteLength);
                         const tjResult = await parseTrojanHeader(chunk, at);
+                        console.log('[WS-DEBUG] Trojan parse result:', JSON.stringify({
+                            hasError: tjResult.hasError,
+                            message: tjResult.message || 'OK'
+                        }));
+                        
                         if (!tjResult.hasError) {
                             protocolType = atob('dHJvamFu');
+                            console.log('[WS-DEBUG] Trojan protocol detected successfully');
                             const { addressType, port, hostname, rawClientData } = tjResult;
+                            console.log('[WS-DEBUG] Trojan target:', hostname + ':' + port);
                             await forwardTCP(addressType, hostname, port, rawClientData, serverSock, null, remoteConnWrapper);
                             return;
+                        } else {
+                            console.log('[WS-DEBUG] Trojan parse failed:', tjResult.message);
                         }
                     }
                     
                     // 如果数据足够大但所有启用的协议都解析失败，可能是认证失败或协议不匹配
-                    // 在这种情况下，静默关闭连接而不是抛出错误
-                    // 这样可以避免错误传播导致连接被取消
+                    console.log('[WS-DEBUG] All protocol attempts failed, closing connection');
+                    console.log('[WS-DEBUG] Chunk preview (first 32 bytes):', Array.from(new Uint8Array(chunk.slice(0, 32))).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
                     closeSocketQuietly(serverSock);
                     return;
                 }
+                
+                console.log('[WS-DEBUG] Data forwarded to established connection');
             },
         })).catch((err) => {
+            console.log('[WS-DEBUG] Stream error caught:', err.message, err.stack);
             // 静默处理错误，避免WebSocket连接被中断
         });
 
+        console.log('[WS-DEBUG] Returning WebSocket response (101)');
         return new Response(null, { 
             status: 101, 
             webSocket: clientSock,
@@ -1651,6 +1710,7 @@
             }
         });
         } catch (error) {
+            console.log('[WS-DEBUG] handleWsRequest error:', error.message, error.stack);
             // 如果WebSocket创建失败，返回错误响应
             return new Response(`WebSocket error: ${error.message}`, { status: 500 });
         }
