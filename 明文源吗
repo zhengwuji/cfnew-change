@@ -1589,24 +1589,38 @@
                 }
                 
                 if (!protocolType) {
+                    // 如果数据块太小（小于最小协议要求），等待更多数据
+                    if (chunk.byteLength < 24) {
+                        return; // 等待更多数据，不抛出错误
+                    }
                     
+                    // 尝试解析 VLESS 协议
                     if (ev && chunk.byteLength >= 24) {
                         const vlessResult = parseWsPacketHeader(chunk, at);
                         if (!vlessResult.hasError) {
                             protocolType = 'vless';
                             const { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
-                if (isUDP) {
-                    if (port === 53) isDnsQuery = true;
-                    else throw new Error(E_UDP_DNS_ONLY);
-                }
-                const respHeader = new Uint8Array([version[0], 0]);
-                const rawData = chunk.slice(rawIndex);
-                if (isDnsQuery) return forwardUDP(rawData, serverSock, respHeader);
-                await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper);
+                            if (isUDP) {
+                                if (port === 53) {
+                                    isDnsQuery = true;
+                                } else {
+                                    // UDP 仅支持 DNS (端口 53)
+                                    closeSocketQuietly(serverSock);
+                                    return;
+                                }
+                            }
+                            const respHeader = new Uint8Array([version[0], 0]);
+                            const rawData = chunk.slice(rawIndex);
+                            if (isDnsQuery) {
+                                await forwardUDP(rawData, serverSock, respHeader);
+                                return;
+                            }
+                            await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper);
                             return;
                         }
                     }
                     
+                    // 尝试解析 Trojan 协议
                     if (et && chunk.byteLength >= 56) {
                         const tjResult = await parseTrojanHeader(chunk, at);
                         if (!tjResult.hasError) {
@@ -1617,7 +1631,11 @@
                         }
                     }
                     
-                    throw new Error('Invalid protocol or authentication failed');
+                    // 如果数据足够大但所有启用的协议都解析失败，可能是认证失败或协议不匹配
+                    // 在这种情况下，静默关闭连接而不是抛出错误
+                    // 这样可以避免错误传播导致连接被取消
+                    closeSocketQuietly(serverSock);
+                    return;
                 }
             },
         })).catch((err) => {
