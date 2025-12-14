@@ -1925,10 +1925,7 @@ async function fetchAndParseWetest(url) {
 
 async function handleWsRequest(request) {
     try {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1926',message:'WebSocket请求已接收',data:{url:request.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        console.log('[WS-DEBUG] WebSocket request received');
+        console.log('[RDP-DEBUG] WebSocket请求已接收，URL:', request.url);
 
         // 解析RDP参数（如果存在）
         let rdpTargetHost = null;
@@ -1936,22 +1933,14 @@ async function handleWsRequest(request) {
         let isRdpMode = false;
         try {
             const url = new URL(request.url);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1935',message:'解析URL',data:{url:url.href,pathname:url.pathname,search:url.search,searchParamsKeys:Array.from(url.searchParams.keys())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-            
+            console.log('[RDP-DEBUG] 解析URL - pathname:', url.pathname, 'search:', url.search, 'searchParamsKeys:', Array.from(url.searchParams.keys()));
             const rdpParam = url.searchParams.get('rdp');
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1937',message:'RDP参数检查结果',data:{rdpParam:rdpParam,hasRdpParam:!!rdpParam},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
+            console.log('[RDP-DEBUG] RDP参数检查 - rdpParam:', rdpParam, 'hasRdpParam:', !!rdpParam);
             
             if (rdpParam) {
                 // RDP参数格式: serverIP:serverPort:localPort
                 const rdpParts = rdpParam.split(':');
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1940',message:'RDP参数分割结果',data:{rdpParam:rdpParam,parts:rdpParts,partsLength:rdpParts.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
-                
+                console.log('[RDP-DEBUG] RDP参数分割 - parts:', rdpParts, 'length:', rdpParts.length);
                 if (rdpParts.length >= 2) {
                     rdpTargetHost = rdpParts[0].trim();
                     rdpTargetPort = parseInt(rdpParts[1].trim(), 10);
@@ -1959,10 +1948,7 @@ async function handleWsRequest(request) {
                     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
                     const isValidIP = ipRegex.test(rdpTargetHost);
                     const isValidPort = rdpTargetPort > 0 && rdpTargetPort <= 65535;
-                    
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1948',message:'RDP参数验证结果',data:{rdpTargetHost:rdpTargetHost,rdpTargetPort:rdpTargetPort,isValidIP:isValidIP,isValidPort:isValidPort},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                    // #endregion
+                    console.log('[RDP-DEBUG] RDP参数验证 - host:', rdpTargetHost, 'port:', rdpTargetPort, 'isValidIP:', isValidIP, 'isValidPort:', isValidPort);
                     
                     if (rdpTargetHost && isValidIP && isValidPort) {
                         isRdpMode = true;
@@ -1975,10 +1961,7 @@ async function handleWsRequest(request) {
                 }
             }
         } catch (e) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1960',message:'解析RDP参数异常',data:{error:e.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-            console.log('[WS-DEBUG] 解析RDP参数失败:', e.message);
+            console.log('[RDP-DEBUG] 解析RDP参数异常:', e.message, e.stack);
         }
 
         // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
@@ -2060,19 +2043,13 @@ async function handleWsRequest(request) {
                             console.log('[WS-DEBUG] VLESS protocol detected successfully');
                             let { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
                             
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:2038',message:'VLESS解析成功',data:{originalHost:hostname,originalPort:port,rdpTargetHost:rdpTargetHost,rdpTargetPort:rdpTargetPort,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion
-                            
+                            console.log('[RDP-DEBUG] VLESS解析成功 - originalHost:', hostname, 'originalPort:', port, 'rdpTargetHost:', rdpTargetHost, 'rdpTargetPort:', rdpTargetPort, 'isRdpMode:', isRdpMode);
                             // 如果存在RDP参数，使用RDP目标地址和端口替代数据包中的地址
                             if (rdpTargetHost && rdpTargetPort) {
                                 hostname = rdpTargetHost;
                                 port = rdpTargetPort;
                                 addressType = 1; // IPv4
-                                // #region agent log
-                                fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:2043',message:'应用RDP目标地址',data:{hostname:hostname,port:port,addressType:addressType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                                // #endregion
-                                console.log('[WS-DEBUG] 使用RDP加速目标:', hostname + ':' + port);
+                                console.log('[RDP-DEBUG] 应用RDP目标地址 - hostname:', hostname, 'port:', port, 'addressType:', addressType);
                             }
                             
                             console.log('[WS-DEBUG] VLESS target:', hostname + ':' + port, 'UDP:', isUDP);
@@ -2102,9 +2079,7 @@ async function handleWsRequest(request) {
                                 return;
                             }
                             console.log('[WS-DEBUG] Forwarding TCP connection to:', hostname + ':' + port);
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:2075',message:'调用forwardTCP',data:{hostname:hostname,port:port,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                            // #endregion
+                            console.log('[RDP-DEBUG] 调用forwardTCP - hostname:', hostname, 'port:', port, 'isRdpMode:', isRdpMode);
                             await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper, isRdpMode);
                             return;
                         } else {
@@ -2166,20 +2141,14 @@ async function handleWsRequest(request) {
 }
 
 async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remoteConnWrapper, isRdpMode = false) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forwardTCP:2134',message:'forwardTCP被调用',data:{host:host,portNum:portNum,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
-    
+    console.log('[RDP-DEBUG] forwardTCP被调用 - host:', host, 'portNum:', portNum, 'isRdpMode:', isRdpMode);
     async function connectAndSend(address, port, useSocks = false) {
         // RDP模式下禁用SOCKS代理
         if (isRdpMode && useSocks) {
             useSocks = false;
-            console.log('[WS-DEBUG] RDP模式：禁用SOCKS代理，直接连接');
+            console.log('[RDP-DEBUG] RDP模式：禁用SOCKS代理，直接连接');
         }
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forwardTCP:connectAndSend',message:'尝试连接',data:{address:address,port:port,useSocks:useSocks,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
+        console.log('[RDP-DEBUG] connectAndSend - address:', address, 'port:', port, 'useSocks:', useSocks, 'isRdpMode:', isRdpMode);
         
         const remoteSock = useSocks ?
             await establishSocksConnection(addrType, address, port) :
@@ -2250,23 +2219,15 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
     try {
         // RDP模式下禁用SOCKS代理，直接连接
         const useSocksForRDP = isRdpMode ? false : (enableSocksDowngrade ? false : isSocksEnabled);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forwardTCP:2208',message:'开始连接RDP服务器',data:{host:host,portNum:portNum,useSocksForRDP:useSocksForRDP,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
+        console.log('[RDP-DEBUG] 开始连接RDP服务器 - host:', host, 'portNum:', portNum, 'useSocksForRDP:', useSocksForRDP, 'isRdpMode:', isRdpMode);
         const initialSocket = await connectAndSend(host, portNum, useSocksForRDP);
         remoteConnWrapper.socket = initialSocket;
         if (isRdpMode) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forwardTCP:2213',message:'RDP连接成功',data:{host:host,portNum:portNum},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
-            console.log('[WS-DEBUG] RDP连接已建立:', host + ':' + portNum);
+            console.log('[RDP-DEBUG] RDP连接成功 - host:', host, 'portNum:', portNum);
         }
         connectStreams(initialSocket, ws, respHeader, isRdpMode ? null : retryConnection);
     } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forwardTCP:2220',message:'RDP连接失败',data:{host:host,portNum:portNum,error:err.message,isRdpMode:isRdpMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
-        console.log('[WS-DEBUG] 连接失败:', host + ':' + portNum, err.message);
+        console.log('[RDP-DEBUG] RDP连接失败 - host:', host, 'portNum:', portNum, 'error:', err.message, 'isRdpMode:', isRdpMode, 'stack:', err.stack);
         if (isRdpMode) {
             console.log('[WS-DEBUG] RDP连接失败，关闭WebSocket');
             closeSocketQuietly(ws);
