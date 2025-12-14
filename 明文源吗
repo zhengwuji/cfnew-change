@@ -2677,6 +2677,24 @@ async function handleSubscriptionPage(request, user = null) {
                 <div class="subscription-url" id="clientSubscriptionUrl"></div>
             </div>
             <div class="card">
+                    <h2 class="card-title">[ RDP 加速配置 ]</h2>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">远程服务器IP:</label>
+                        <input type="text" id="rdpServerIP" placeholder="例如: 192.168.1.100" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">RDP 端口:</label>
+                        <input type="number" id="rdpServerPort" value="3389" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">本地映射端口:</label>
+                        <input type="number" id="rdpLocalPort" value="13389" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
+                    </div>
+                    <button class="generate-btn" onclick="generateRDPSubscription()">🖥️ 生成 RDP 加速订阅</button>
+                    <div class="subscription-url" id="rdpSubscriptionUrl"></div>
+                    <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 12px;">💡 填写远程服务器信息，生成RDP加速订阅。导入V2Ray客户端后，在RDP客户端连接 127.0.0.1:13389</small>
+            </div>
+            <div class="card">
                     <h2 class="card-title">${t.systemStatus}</h2>
                 <div id="systemStatus" style="margin: 20px 0; padding: 16px; background: #f9fafb; border-radius: 6px;">
                         <div class="status-item">
@@ -4262,6 +4280,19 @@ async function handleSubscriptionPage(request, user = null) {
                     }
                 }
             });
+            
+            function generateRDPSubscription(){
+                var serverIP=document.getElementById("rdpServerIP").value.trim();
+                var serverPort=document.getElementById("rdpServerPort").value||"3389";
+                var localPort=document.getElementById("rdpLocalPort").value||"13389";
+                if(!serverIP){alert("请输入远程服务器IP");return;}
+                var rdpRemark="RDP加速-"+serverIP+":"+serverPort+"→127.0.0.1:"+localPort;
+                var vlessLink="vless://00000000-0000-0000-0000-000000000000@"+window.location.hostname+":443?encryption=none&security=tls&sni="+window.location.hostname+"&fp=randomized&type=ws&host="+window.location.hostname+"&path=%2F%3Fed%3D2048%26rdp%3D"+serverIP+"%3A"+serverPort+"%3A"+localPort+"#"+encodeURIComponent(rdpRemark);
+                var rdpSubscription=btoa(vlessLink);
+                document.getElementById("rdpSubscriptionUrl").textContent=rdpSubscription;
+                document.getElementById("rdpSubscriptionUrl").style.display="block";
+                navigator.clipboard.writeText(rdpSubscription).then(function(){alert("RDP加速订阅已复制！\\n\\n配置完成后：\\n1. 导入V2Ray客户端\\n2. 连接节点\\n3. RDP客户端输入: 127.0.0.1:"+localPort);});
+            }
         </script>
     </body>
     </html>`;
