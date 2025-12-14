@@ -1966,12 +1966,9 @@ async function handleWsRequest(request) {
                     
                     if (rdpTargetHost && isValidIP && isValidPort) {
                         isRdpMode = true;
-                        // #region agent log
-                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handleWsRequest:1951',message:'RDP模式已启用',data:{rdpTargetHost:rdpTargetHost,rdpTargetPort:rdpTargetPort,isRdpMode:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                        // #endregion
-                        console.log('[WS-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort);
+                        console.log('[RDP-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort, 'isRdpMode:', isRdpMode);
                     } else {
-                        console.log('[WS-DEBUG] RDP参数验证失败 - IP格式:', isValidIP, '端口:', isValidPort, 'host:', rdpTargetHost, 'port:', rdpTargetPort);
+                        console.log('[RDP-DEBUG] RDP参数验证失败 - IP格式:', isValidIP, '端口:', isValidPort, 'host:', rdpTargetHost, 'port:', rdpTargetPort);
                     }
                 } else {
                     console.log('[WS-DEBUG] RDP参数格式错误，应为: serverIP:serverPort:localPort');
@@ -2150,8 +2147,8 @@ async function handleWsRequest(request) {
             // 静默处理错误，避免WebSocket连接被中断
         });
 
-        console.log('[WS-DEBUG] Returning WebSocket response (101)');
-        return new Response(null, {
+        console.log('[WS-DEBUG] Returning WebSocket response (101), isRdpMode:', isRdpMode);
+        const wsResponse = new Response(null, {
             status: 101,
             webSocket: clientSock,
             headers: {
@@ -2159,6 +2156,8 @@ async function handleWsRequest(request) {
                 'Connection': 'Upgrade'
             }
         });
+        console.log('[WS-DEBUG] WebSocket response created successfully');
+        return wsResponse;
     } catch (error) {
         console.log('[WS-DEBUG] handleWsRequest error:', error.message, error.stack);
         // 如果WebSocket创建失败，返回错误响应
