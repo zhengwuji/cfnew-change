@@ -3239,24 +3239,86 @@ async function handleSubscriptionPage(request, user = null) {
             }
             
             // 应用 Bing 壁纸
+            // 应用 Bing 壁纸
             function applyBingWallpaper() {
-                // 使用 Bing 每日壁纸 API
-                const bingUrl = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1';
-                fetch(bingUrl)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.images && data.images[0]) {
-                            const imageUrl = 'https://www.bing.com' + data.images[0].url;
-                            themeConfig.bgValue = imageUrl;
-                            document.body.style.background = \`url(\${imageUrl})\`;
-                            document.body.classList.add('custom-bg');
-                            saveThemeConfig();
-                        }
+                // 使用多个 Bing 壁纸 API 镜像，自动故障转移
+                const bingApis = [
+                    // 国内可用的 Bing 壁纸 API
+                    'https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1',
+                    // 备用 API
+                    'https://bing.biturl.top/?resolution=1920&format=json&index=0&mkt=zh-CN',
+                    // 直接使用图片 URL
+                    'https://www.bing.com/th?id=OHR.PeggysPoint_ZH-CN1017701773_1920x1080.jpg'
+                ];
+                
+                let currentApiIndex = 0;
+                
+                function tryNextApi() {
+                    if (currentApiIndex >= bingApis.length) {
+                        console.error('所有 Bing API 均失败');
+                        alert('加载 Bing 壁纸失败，已尝试多个数据源。\n建议：\n1. 检查网络连接\n2. 尝试其他背景来源（Unsplash、内建背景）\n3. 或使用自定义URL');
+                        return;
+                    }
+                    
+                    const apiUrl = bingApis[currentApiIndex];
+                    
+                    // 如果是直接图片URL
+                    if (apiUrl.includes('.jpg') || apiUrl.includes('.png')) {
+                        themeConfig.bgValue = apiUrl;
+                        document.body.style.background = \`url(\${apiUrl})\`;
+                        document.body.classList.add('custom-bg');
+                        saveThemeConfig();
+                        return;
+                    }
+                    
+                    // 使用超时控制
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
+                    fetch(apiUrl, { 
+                        signal: controller.signal,
+                        mode: 'cors',
+                        cache: 'no-cache'
                     })
-                    .catch(err => {
-                        console.error('加载 Bing 壁纸失败', err);
-                        alert('加载 Bing 壁纸失败，请检查网络连接');
-                    });
+                        .then(res => {
+                            clearTimeout(timeoutId);
+                            if (!res.ok) throw new Error(\`HTTP \${res.status}\`);
+                            return res.json();
+                        })
+                        .then(data => {
+                            let imageUrl = null;
+                            
+                            // 处理不同API的响应格式
+                            if (data.images && data.images[0]) {
+                                // 官方 API 格式
+                                imageUrl = data.images[0].url;
+                                if (!imageUrl.startsWith('http')) {
+                                    imageUrl = 'https://www.bing.com' + imageUrl;
+                                }
+                            } else if (data.url) {
+                                // 第三方 API 格式
+                                imageUrl = data.url;
+                            }
+                            
+                            if (imageUrl) {
+                                themeConfig.bgValue = imageUrl;
+                                document.body.style.background = \`url(\${imageUrl})\`;
+                                document.body.classList.add('custom-bg');
+                                saveThemeConfig();
+                                console.log('Bing 壁纸加载成功:', imageUrl);
+                            } else {
+                                throw new Error('未找到图片URL');
+                            }
+                        })
+                        .catch(err => {
+                            clearTimeout(timeoutId);
+                            console.warn(\`Bing API \${currentApiIndex + 1} 失败:\`, err.message);
+                            currentApiIndex++;
+                            tryNextApi();
+                        });
+                }
+                
+                tryNextApi();
             }
             
             // 应用 Unsplash 壁纸
