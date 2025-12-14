@@ -5576,6 +5576,19 @@ async function fetchPreferredAPI(urls, defaultPort = '443', timeout = 3000) {
     }));
     return Array.from(results);
 }
+
+async function handleRdpAdminPage(request) {
+    const url = new URL(request.url);
+    const hostname = url.hostname;
+    
+    const rdpAdminHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDP加速管理</title>
+    <style>
+        body {
             min-height: 100vh;
             padding: 40px 20px;
         }
