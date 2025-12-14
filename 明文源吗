@@ -37,7 +37,6 @@ let egi = true;
 let kvStore = null;
 let kvConfig = {};
 
-
 const regionMapping = {
     'US': ['🇺🇸 美国', 'US', 'United States'],
     'SG': ['🇸🇬 新加坡', 'SG', 'Singapore'],
@@ -127,7 +126,6 @@ async function initKVStore(env) {
         } catch (error) {
             kvStore = null;
         }
-    } else {
     }
 }
 
@@ -142,7 +140,6 @@ async function loadKVConfig() {
 
         if (configData) {
             kvConfig = JSON.parse(configData);
-        } else {
         }
     } catch (error) {
         kvConfig = {};
@@ -3513,7 +3510,6 @@ async function handleSubscriptionPage(request, user = null) {
                         setTimeout(function() {
                             window.location.reload();
                         }, 1500);
-                    } else {
                     }
                 } catch (error) {
                     showStatus('保存失败: ' + error.message, 'error');
