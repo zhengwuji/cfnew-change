@@ -2600,56 +2600,9 @@ async function handleSubscriptionPage(request, user = null) {
                 border-color: #22c55e !important;
                 box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
             }
-            .bg-switcher {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
-                background: rgba(255, 255, 255, 0.95);
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 12px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                min-width: 200px;
-            }
-            .bg-switcher-title {
-                font-size: 0.875rem;
-                font-weight: 600;
-                color: #22c55e;
-                margin-bottom: 8px;
-            }
-            .bg-switcher-info {
-                font-size: 0.75rem;
-                color: #666;
-                margin-bottom: 8px;
-                padding: 6px;
-                background: #f9fafb;
-                border-radius: 4px;
-            }
-            .bg-switcher-btn {
-                background: #22c55e;
-                border: none;
-                padding: 8px 16px;
-                color: #ffffff;
-                font-size: 0.875rem;
-                font-weight: 500;
-                cursor: pointer;
-                border-radius: 6px;
-                width: 100%;
-                transition: all 0.2s ease;
-            }
-            .bg-switcher-btn:hover {
-                background: #16a34a;
-                transform: translateY(-1px);
-            }
         </style>
     </head>
     <body>
-        <div class="bg-switcher">
-            <div class="bg-switcher-title">🎨 背景切换</div>
-            <div class="bg-switcher-info" id="bgInfo">番号: -</div>
-            <button class="bg-switcher-btn" onclick="changeBackground()">更换背景</button>
-        </div>
         <div class="container">
             <div class="header">
                     <h1 class="title">${t.title}</h1>
