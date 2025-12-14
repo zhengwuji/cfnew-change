@@ -152,6 +152,27 @@ function logError(error, context = 'Unknown', extra = {}) {
 function logHTTPError(statusCode, message, context = 'HTTPError', extra = {}) {
     // 只记录 4xx 和 5xx 错误
     if (statusCode >= 400) {
+        // 过滤掉不重要的请求（浏览器自动请求）
+        const ignoredPaths = [
+            '/favicon.ico',
+            '/robots.txt',
+            '/apple-touch-icon.png',
+            '/apple-touch-icon-precomposed.png',
+            '/favicon.png',
+            '/favicon.jpg',
+            '/.well-known/',
+            '/sitemap.xml'
+        ];
+        
+        const url = extra.url || '';
+        const shouldIgnore = ignoredPaths.some(path => url.includes(path));
+        
+        // 对于 404 错误，如果是被忽略的路径，则不记录
+        // 对于其他错误（403, 500等），仍然记录
+        if (statusCode === 404 && shouldIgnore) {
+            return; // 不记录 favicon.ico 等 404 错误
+        }
+        
         logError(new Error(`HTTP ${statusCode}: ${message}`), context, {
             ...extra,
             statusCode: statusCode
