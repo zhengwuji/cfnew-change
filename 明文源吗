@@ -565,7 +565,9 @@ export default {
 
             // 优先处理WebSocket升级请求（必须在其他路由之前）
             const upgradeHeader = request.headers.get('Upgrade');
+            console.log('[ENTRY-DEBUG] 请求到达 - method:', request.method, 'url:', request.url, 'Upgrade header:', upgradeHeader);
             if (upgradeHeader && upgradeHeader.toLowerCase() === atob('d2Vic29ja2V0')) {
+                console.log('[ENTRY-DEBUG] WebSocket升级请求检测到，调用handleWsRequest');
                 return await handleWsRequest(request);
             }
 
