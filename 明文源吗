@@ -37,9 +37,6 @@ let egi = true;
 let kvStore = null;
 let kvConfig = {};
 
-// RDP加速相关配置
-let rdpServers = [];  // RDP服务器列表
-let enableRDP = false;  // RDP功能开关
 
 const regionMapping = {
     'US': ['🇺🇸 美国', 'US', 'United States'],
@@ -692,63 +689,6 @@ export default {
                             }), {
                                 status: 403,
                                 headers: { 'Content-Type': 'application/json' }
-                            });
-                        }
-                    }
-                }
-
-                // RDP管理界面路由
-                if (url.pathname.endsWith('/rdp-admin')) {
-                    const pathParts = url.pathname.split('/').filter(function (p) { return p; });
-
-                    if (pathParts.length === 2 && pathParts[1] === 'rdp-admin') {
-                        const pathIdentifier = pathParts[0];
-                        let isValid = false;
-
-                        if (cp && cp.trim()) {
-                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
-                            isValid = (pathIdentifier === cleanCustomPath);
-                        } else {
-                            isValid = (pathIdentifier === envUKey);
-                        }
-
-                        if (isValid) {
-                            return handleRdpAdmin(request, url.hostname);
-                        } else {
-                            return new Response(JSON.stringify({
-                                error: '访问被拒绝',
-                                message: '路径验证失败'
-                            }), {
-                                status: 403,
-                                headers: { 'Content-Type': 'application/json' }
-                            });
-                        }
-                    }
-                }
-
-                // RDP API路由
-                if (url.pathname.includes('/api/rdp')) {
-                    const pathParts = url.pathname.split('/').filter(function (p) { return p; });
-                    const apiIndex = pathParts.indexOf('api');
-
-                    if (apiIndex > 0) {
-                        const pathSegments = pathParts.slice(0, apiIndex);
-                        const pathIdentifier = pathSegments.join('/');
-                        let isValid = false;
-
-                        if (cp && cp.trim()) {
-                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
-                            isValid = (pathIdentifier === cleanCustomPath);
-                        } else {
-                            isValid = (pathIdentifier === envUKey);
-                        }
-
-                        if (isValid) {
-                            return await handleRdpAPI(request);
-                        } else {
-                            return new Response(JSON.stringify({ error: '路径验证失败' }), {
-                                status: 403,
-                                headers: { 'Content-Type': 'application/json; charset=utf-8' }
                             });
                         }
                     }
@@ -1927,44 +1867,7 @@ async function fetchAndParseWetest(url) {
 
 async function handleWsRequest(request) {
     try {
-        console.log('[RDP-DEBUG] WebSocket请求已接收，URL:', request.url);
-
-        // 解析RDP参数（如果存在）
-        let rdpTargetHost = null;
-        let rdpTargetPort = null;
-        let isRdpMode = false;
-        try {
-            const url = new URL(request.url);
-            console.log('[RDP-DEBUG] 解析URL - pathname:', url.pathname, 'search:', url.search, 'searchParamsKeys:', Array.from(url.searchParams.keys()));
-            const rdpParam = url.searchParams.get('rdp');
-            console.log('[RDP-DEBUG] RDP参数检查 - rdpParam:', rdpParam, 'hasRdpParam:', !!rdpParam);
-            
-            if (rdpParam) {
-                // RDP参数格式: serverIP:serverPort:localPort
-                const rdpParts = rdpParam.split(':');
-                console.log('[RDP-DEBUG] RDP参数分割 - parts:', rdpParts, 'length:', rdpParts.length);
-                if (rdpParts.length >= 2) {
-                    rdpTargetHost = rdpParts[0].trim();
-                    rdpTargetPort = parseInt(rdpParts[1].trim(), 10);
-                    // 验证IP地址格式和端口
-                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                    const isValidIP = ipRegex.test(rdpTargetHost);
-                    const isValidPort = rdpTargetPort > 0 && rdpTargetPort <= 65535;
-                    console.log('[RDP-DEBUG] RDP参数验证 - host:', rdpTargetHost, 'port:', rdpTargetPort, 'isValidIP:', isValidIP, 'isValidPort:', isValidPort);
-                    
-                    if (rdpTargetHost && isValidIP && isValidPort) {
-                        isRdpMode = true;
-                        console.log('[RDP-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort, 'isRdpMode:', isRdpMode);
-                    } else {
-                        console.log('[RDP-DEBUG] RDP参数验证失败 - IP格式:', isValidIP, '端口:', isValidPort, 'host:', rdpTargetHost, 'port:', rdpTargetPort);
-                    }
-                } else {
-                    console.log('[WS-DEBUG] RDP参数格式错误，应为: serverIP:serverPort:localPort');
-                }
-            }
-        } catch (e) {
-            console.log('[RDP-DEBUG] 解析RDP参数异常:', e.message, e.stack);
-        }
+        console.log('[WS-DEBUG] WebSocket request received');
 
         // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
         if (!currentWorkerRegion || currentWorkerRegion === '') {
@@ -2043,25 +1946,8 @@ async function handleWsRequest(request) {
                         if (!vlessResult.hasError) {
                             protocolType = 'vless';
                             console.log('[WS-DEBUG] VLESS protocol detected successfully');
-                            let { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
-                            
-                            console.log('[RDP-DEBUG] VLESS解析成功 - originalHost:', hostname, 'originalPort:', port, 'rdpTargetHost:', rdpTargetHost, 'rdpTargetPort:', rdpTargetPort, 'isRdpMode:', isRdpMode);
-                            // 如果存在RDP参数，使用RDP目标地址和端口替代数据包中的地址
-                            if (rdpTargetHost && rdpTargetPort) {
-                                hostname = rdpTargetHost;
-                                port = rdpTargetPort;
-                                addressType = 1; // IPv4
-                                console.log('[RDP-DEBUG] 应用RDP目标地址 - hostname:', hostname, 'port:', port, 'addressType:', addressType);
-                            }
-                            
+                            const { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
                             console.log('[WS-DEBUG] VLESS target:', hostname + ':' + port, 'UDP:', isUDP);
-
-                            // RDP模式仅支持TCP连接，不支持UDP
-                            if (isRdpMode && isUDP) {
-                                console.log('[WS-DEBUG] RDP模式不支持UDP，连接已拒绝');
-                                closeSocketQuietly(serverSock);
-                                return;
-                            }
 
                             if (isUDP) {
                                 if (port === 53) {
@@ -2081,8 +1967,7 @@ async function handleWsRequest(request) {
                                 return;
                             }
                             console.log('[WS-DEBUG] Forwarding TCP connection to:', hostname + ':' + port);
-                            console.log('[RDP-DEBUG] 调用forwardTCP - hostname:', hostname, 'port:', port, 'isRdpMode:', isRdpMode);
-                            await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper, isRdpMode);
+                            await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper);
                             return;
                         } else {
                             console.log('[WS-DEBUG] VLESS parse failed:', vlessResult.message);
@@ -2124,8 +2009,8 @@ async function handleWsRequest(request) {
             // 静默处理错误，避免WebSocket连接被中断
         });
 
-        console.log('[WS-DEBUG] Returning WebSocket response (101), isRdpMode:', isRdpMode);
-        const wsResponse = new Response(null, {
+        console.log('[WS-DEBUG] Returning WebSocket response (101)');
+        return new Response(null, {
             status: 101,
             webSocket: clientSock,
             headers: {
@@ -2133,8 +2018,6 @@ async function handleWsRequest(request) {
                 'Connection': 'Upgrade'
             }
         });
-        console.log('[WS-DEBUG] WebSocket response created successfully');
-        return wsResponse;
     } catch (error) {
         console.log('[WS-DEBUG] handleWsRequest error:', error.message, error.stack);
         // 如果WebSocket创建失败，返回错误响应
@@ -2142,16 +2025,8 @@ async function handleWsRequest(request) {
     }
 }
 
-async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remoteConnWrapper, isRdpMode = false) {
-    console.log('[RDP-DEBUG] forwardTCP被调用 - host:', host, 'portNum:', portNum, 'isRdpMode:', isRdpMode);
+async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remoteConnWrapper) {
     async function connectAndSend(address, port, useSocks = false) {
-        // RDP模式下禁用SOCKS代理
-        if (isRdpMode && useSocks) {
-            useSocks = false;
-            console.log('[RDP-DEBUG] RDP模式：禁用SOCKS代理，直接连接');
-        }
-        console.log('[RDP-DEBUG] connectAndSend - address:', address, 'port:', port, 'useSocks:', useSocks, 'isRdpMode:', isRdpMode);
-        
         const remoteSock = useSocks ?
             await establishSocksConnection(addrType, address, port) :
             connect({ hostname: address, port: port });
@@ -2162,13 +2037,6 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
     }
 
     async function retryConnection() {
-        // RDP模式下不进行fallback重试，因为必须连接到指定的RDP服务器
-        if (isRdpMode) {
-            console.log('[WS-DEBUG] RDP模式：连接失败，不进行fallback重试');
-            closeSocketQuietly(ws);
-            return;
-        }
-        
         if (enableSocksDowngrade && isSocksEnabled) {
             try {
                 const socksSocket = await connectAndSend(host, portNum, true);
@@ -2219,23 +2087,11 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
     }
 
     try {
-        // RDP模式下禁用SOCKS代理，直接连接
-        const useSocksForRDP = isRdpMode ? false : (enableSocksDowngrade ? false : isSocksEnabled);
-        console.log('[RDP-DEBUG] 开始连接RDP服务器 - host:', host, 'portNum:', portNum, 'useSocksForRDP:', useSocksForRDP, 'isRdpMode:', isRdpMode);
-        const initialSocket = await connectAndSend(host, portNum, useSocksForRDP);
+        const initialSocket = await connectAndSend(host, portNum, enableSocksDowngrade ? false : isSocksEnabled);
         remoteConnWrapper.socket = initialSocket;
-        if (isRdpMode) {
-            console.log('[RDP-DEBUG] RDP连接成功 - host:', host, 'portNum:', portNum);
-        }
-        connectStreams(initialSocket, ws, respHeader, isRdpMode ? null : retryConnection);
+        connectStreams(initialSocket, ws, respHeader, retryConnection);
     } catch (err) {
-        console.log('[RDP-DEBUG] RDP连接失败 - host:', host, 'portNum:', portNum, 'error:', err.message, 'isRdpMode:', isRdpMode, 'stack:', err.stack);
-        if (isRdpMode) {
-            console.log('[WS-DEBUG] RDP连接失败，关闭WebSocket');
-            closeSocketQuietly(ws);
-        } else {
-            retryConnection();
-        }
+        retryConnection();
     }
 }
 
@@ -2714,24 +2570,6 @@ async function handleSubscriptionPage(request, user = null) {
                     <button class="client-btn" onclick="generateClientLink(atob('djJyYXk='), 'Shadowrocket')">Shadowrocket</button>
                 </div>
                 <div class="subscription-url" id="clientSubscriptionUrl"></div>
-            </div>
-            <div class="card">
-                    <h2 class="card-title">[ RDP 加速配置 ]</h2>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">远程服务器IP:</label>
-                        <input type="text" id="rdpServerIP" placeholder="例如: 192.168.1.100" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">RDP 端口:</label>
-                        <input type="number" id="rdpServerPort" value="3389" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">本地映射端口:</label>
-                        <input type="number" id="rdpLocalPort" value="13389" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;" />
-                    </div>
-                    <button class="generate-btn" onclick="generateRDPSubscription()">🖥️ 生成 RDP 加速订阅</button>
-                    <div class="subscription-url" id="rdpSubscriptionUrl"></div>
-                    <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 12px;">💡 填写远程服务器信息，生成RDP加速订阅。导入V2Ray客户端后，在RDP客户端连接 127.0.0.1:13389</small>
             </div>
             <div class="card">
                     <h2 class="card-title">${t.systemStatus}</h2>
@@ -4320,18 +4158,6 @@ async function handleSubscriptionPage(request, user = null) {
                 }
             });
             
-            function generateRDPSubscription(){
-                var serverIP=document.getElementById("rdpServerIP").value.trim();
-                var serverPort=document.getElementById("rdpServerPort").value||"3389";
-                var localPort=document.getElementById("rdpLocalPort").value||"13389";
-                if(!serverIP){alert("请输入远程服务器IP");return;}
-                var rdpRemark="RDP加速-"+serverIP+":"+serverPort+"→127.0.0.1:"+localPort;
-                var vlessLink="vless://00000000-0000-0000-0000-000000000000@"+window.location.hostname+":443?encryption=none&security=tls&sni="+window.location.hostname+"&fp=randomized&type=ws&host="+window.location.hostname+"&path=%2F%3Fed%3D2048%26rdp%3D"+serverIP+"%3A"+serverPort+"%3A"+localPort+"#"+encodeURIComponent(rdpRemark);
-                var rdpSubscription=btoa(vlessLink);
-                document.getElementById("rdpSubscriptionUrl").textContent=rdpSubscription;
-                document.getElementById("rdpSubscriptionUrl").style.display="block";
-                navigator.clipboard.writeText(rdpSubscription).then(function(){alert("RDP加速订阅已复制！\\n\\n配置完成后：\\n1. 导入V2Ray客户端\\n2. 连接节点\\n3. RDP客户端输入: 127.0.0.1:"+localPort);});
-            }
         </script>
     </body>
     </html>`;
@@ -5750,27 +5576,6 @@ async function fetchPreferredAPI(urls, defaultPort = '443', timeout = 3000) {
     }));
     return Array.from(results);
 }
-
-// ==================== RDP加速功能 ====================
-
-/**
- * 处理RDP管理界面
- */
-async function handleRdpAdmin(request, hostname) {
-    const rdpAdminHTML = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDP加速管理</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -6227,6 +6032,3 @@ async function handleRdpAPI(request) {
 /**
  * 生成随机ID
  */
-function generateRandomId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
