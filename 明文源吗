@@ -1930,6 +1930,7 @@ async function handleWsRequest(request) {
         // 解析RDP参数（如果存在）
         let rdpTargetHost = null;
         let rdpTargetPort = null;
+        let isRdpMode = false;
         try {
             const url = new URL(request.url);
             const rdpParam = url.searchParams.get('rdp');
@@ -1937,9 +1938,21 @@ async function handleWsRequest(request) {
                 // RDP参数格式: serverIP:serverPort:localPort
                 const rdpParts = rdpParam.split(':');
                 if (rdpParts.length >= 2) {
-                    rdpTargetHost = rdpParts[0];
-                    rdpTargetPort = parseInt(rdpParts[1], 10);
-                    console.log('[WS-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort);
+                    rdpTargetHost = rdpParts[0].trim();
+                    rdpTargetPort = parseInt(rdpParts[1].trim(), 10);
+                    // 验证IP地址格式和端口
+                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                    const isValidIP = ipRegex.test(rdpTargetHost);
+                    const isValidPort = rdpTargetPort > 0 && rdpTargetPort <= 65535;
+                    
+                    if (rdpTargetHost && isValidIP && isValidPort) {
+                        isRdpMode = true;
+                        console.log('[WS-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort);
+                    } else {
+                        console.log('[WS-DEBUG] RDP参数验证失败 - IP格式:', isValidIP, '端口:', isValidPort, 'host:', rdpTargetHost, 'port:', rdpTargetPort);
+                    }
+                } else {
+                    console.log('[WS-DEBUG] RDP参数格式错误，应为: serverIP:serverPort:localPort');
                 }
             }
         } catch (e) {
@@ -2035,6 +2048,13 @@ async function handleWsRequest(request) {
                             
                             console.log('[WS-DEBUG] VLESS target:', hostname + ':' + port, 'UDP:', isUDP);
 
+                            // RDP模式仅支持TCP连接，不支持UDP
+                            if (isRdpMode && isUDP) {
+                                console.log('[WS-DEBUG] RDP模式不支持UDP，连接已拒绝');
+                                closeSocketQuietly(serverSock);
+                                return;
+                            }
+
                             if (isUDP) {
                                 if (port === 53) {
                                     isDnsQuery = true;
@@ -2053,7 +2073,7 @@ async function handleWsRequest(request) {
                                 return;
                             }
                             console.log('[WS-DEBUG] Forwarding TCP connection to:', hostname + ':' + port);
-                            await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper);
+                            await forwardTCP(addressType, hostname, port, rawData, serverSock, respHeader, remoteConnWrapper, isRdpMode);
                             return;
                         } else {
                             console.log('[WS-DEBUG] VLESS parse failed:', vlessResult.message);
@@ -2111,8 +2131,14 @@ async function handleWsRequest(request) {
     }
 }
 
-async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remoteConnWrapper) {
+async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remoteConnWrapper, isRdpMode = false) {
     async function connectAndSend(address, port, useSocks = false) {
+        // RDP模式下禁用SOCKS代理
+        if (isRdpMode && useSocks) {
+            useSocks = false;
+            console.log('[WS-DEBUG] RDP模式：禁用SOCKS代理，直接连接');
+        }
+        
         const remoteSock = useSocks ?
             await establishSocksConnection(addrType, address, port) :
             connect({ hostname: address, port: port });
@@ -2123,6 +2149,13 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
     }
 
     async function retryConnection() {
+        // RDP模式下不进行fallback重试，因为必须连接到指定的RDP服务器
+        if (isRdpMode) {
+            console.log('[WS-DEBUG] RDP模式：连接失败，不进行fallback重试');
+            closeSocketQuietly(ws);
+            return;
+        }
+        
         if (enableSocksDowngrade && isSocksEnabled) {
             try {
                 const socksSocket = await connectAndSend(host, portNum, true);
@@ -2173,11 +2206,22 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
     }
 
     try {
-        const initialSocket = await connectAndSend(host, portNum, enableSocksDowngrade ? false : isSocksEnabled);
+        // RDP模式下禁用SOCKS代理，直接连接
+        const useSocksForRDP = isRdpMode ? false : (enableSocksDowngrade ? false : isSocksEnabled);
+        const initialSocket = await connectAndSend(host, portNum, useSocksForRDP);
         remoteConnWrapper.socket = initialSocket;
-        connectStreams(initialSocket, ws, respHeader, retryConnection);
+        if (isRdpMode) {
+            console.log('[WS-DEBUG] RDP连接已建立:', host + ':' + portNum);
+        }
+        connectStreams(initialSocket, ws, respHeader, isRdpMode ? null : retryConnection);
     } catch (err) {
-        retryConnection();
+        console.log('[WS-DEBUG] 连接失败:', host + ':' + portNum, err.message);
+        if (isRdpMode) {
+            console.log('[WS-DEBUG] RDP连接失败，关闭WebSocket');
+            closeSocketQuietly(ws);
+        } else {
+            retryConnection();
+        }
     }
 }
 
