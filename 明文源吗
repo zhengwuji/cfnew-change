@@ -2600,9 +2600,780 @@ async function handleSubscriptionPage(request, user = null) {
                 border-color: #22c55e !important;
                 box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
             }
+
+            /* ========== Argon 主题系统 ========== */
+            :root {
+                /* Argon 主色调 */
+                --argon-primary: #5e72e4;
+                --argon-primary-dark: #324cdd;
+                --argon-secondary: #11cdef;
+                --argon-success: #2dce89;
+                --argon-warning: #fb6340;
+                --argon-danger: #f5365c;
+                
+                /* 主题背景色 */
+                --theme-bg: #f7fafc;
+                --theme-card-bg: rgba(255, 255, 255, 0.98);
+                --theme-text: #1f2937;
+                --theme-text-secondary: #6b7280;
+                --theme-border: rgba(229, 231, 235, 0.8);
+                
+                /* 透明度和模糊 */
+                --theme-opacity: 0.98;
+                --theme-blur: 20px;
+            }
+            
+            /* 暗色模式 */
+            body.dark-mode {
+                --theme-bg: #172b4d;
+                --theme-card-bg: rgba(30, 58, 95, 0.95);
+                --theme-text: #ffffff;
+                --theme-text-secondary: #cbd5e0;
+                --theme-border: rgba(59, 130, 246, 0.2);
+                --theme-opacity: 0.95;
+            }
+            
+            /* 动态背景 */
+            body:not(.custom-bg) {
+                background: var(--theme-bg);
+                transition: background 0.3s ease;
+            }
+            
+            body.custom-bg {
+                background-size: cover !important;
+                background-position: center !important;
+                background-attachment: fixed !important;
+                background-repeat: no-repeat !important;
+            }
+            
+            /* 主题设置按钮 */
+            .theme-settings-btn {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 999;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--argon-primary), var(--argon-secondary));
+                border: none;
+                box-shadow: 0 4px 12px rgba(94, 114, 228, 0.4);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                color: white;
+                font-size: 24px;
+            }
+            
+            .theme-settings-btn:hover {
+                transform: translateY(-2px) rotate(90deg);
+                box-shadow: 0 6px 16px rgba(94, 114, 228, 0.6);
+            }
+            
+            /* 主题设置面板 */
+            .theme-panel {
+                position: fixed;
+                top: 0;
+                right: -420px;
+                width: 400px;
+                height: 100vh;
+                background: var(--theme-card-bg);
+                backdrop-filter: blur(var(--theme-blur));
+                -webkit-backdrop-filter: blur(var(--theme-blur));
+                box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow-y: auto;
+                border-left: 1px solid var(--theme-border);
+            }
+            
+            .theme-panel.active {
+                right: 0;
+            }
+            
+            .theme-panel-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+            }
+            
+            .theme-panel-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .theme-panel-header {
+                padding: 24px;
+                border-bottom: 1px solid var(--theme-border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                background: var(--theme-card-bg);
+                backdrop-filter: blur(var(--theme-blur));
+                z-index: 10;
+            }
+            
+            .theme-panel-title {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: var(--theme-text);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .theme-panel-close {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                border: none;
+                background: rgba(0, 0, 0, 0.05);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                color: var(--theme-text-secondary);
+            }
+            
+            .theme-panel-close:hover {
+                background: rgba(0, 0, 0, 0.1);
+                color: var(--theme-text);
+                transform: rotate(90deg);
+            }
+            
+            .theme-panel-body {
+                padding: 24px;
+            }
+            
+            .theme-section {
+                margin-bottom: 28px;
+            }
+            
+            .theme-section-title {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--argon-primary);
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .theme-option {
+                margin-bottom: 16px;
+            }
+            
+            .theme-label {
+                display: block;
+                font-size: 0.875rem;
+                color: var(--theme-text);
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+            
+            .theme-select {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--theme-border);
+                border-radius: 8px;
+                background: var(--theme-card-bg);
+                color: var(--theme-text);
+                font-size: 0.875rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .theme-select:focus {
+                outline: none;
+                border-color: var(--argon-primary);
+                box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.1);
+            }
+            
+            .theme-select option {
+                background: var(--theme-card-bg);
+                color: var(--theme-text);
+            }
+            
+            .theme-input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--theme-border);
+                border-radius: 8px;
+                background: var(--theme-card-bg);
+                color: var(--theme-text);
+                font-size: 0.875rem;
+                transition: all 0.2s ease;
+            }
+            
+            .theme-input:focus {
+                outline: none;
+                border-color: var(--argon-primary);
+                box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.1);
+            }
+            
+            .theme-slider {
+                width: 100%;
+                height: 6px;
+                border-radius: 3px;
+                background: rgba(94, 114, 228, 0.2);
+                outline: none;
+                -webkit-appearance: none;
+            }
+            
+            .theme-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--argon-primary);
+                cursor: pointer;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                transition: all 0.2s ease;
+            }
+            
+            .theme-slider::-webkit-slider-thumb:hover {
+                transform: scale(1.2);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            }
+            
+            .theme-slider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: var(--argon-primary);
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+            
+            .theme-mode-btns {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .theme-mode-btn {
+                padding: 10px 16px;
+                border: 1px solid var(--theme-border);
+                border-radius: 8px;
+                background: var(--theme-card-bg);
+                color: var(--theme-text);
+                font-size: 0.875rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+            }
+            
+            .theme-mode-btn:hover {
+                border-color: var(--argon-primary);
+                color: var(--argon-primary);
+            }
+            
+            .theme-mode-btn.active {
+                background: var(--argon-primary);
+                border-color: var(--argon-primary);
+                color: white;
+                font-weight: 600;
+            }
+            
+            .theme-bg-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                margin-top: 12px;
+            }
+            
+            .theme-bg-item {
+                aspect-ratio: 16/9;
+                border-radius: 8px;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: all 0.2s ease;
+                background-size: cover;
+                background-position: center;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .theme-bg-item:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            
+            .theme-bg-item.active {
+                border-color: var(--argon-primary);
+                box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.2);
+            }
+            
+            .theme-bg-item.active::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: var(--argon-primary);
+                color: white;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 18px;
+            }
+            
+            .slider-value {
+                display: inline-block;
+                float: right;
+                color: var(--argon-primary);
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+            
+            .color-preview {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                border: 2px solid var(--theme-border);
+                margin-top: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .color-preview:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* 移动端适配 */
+            @media (max-width: 768px) {
+                .theme-panel {
+                    width: 100%;
+                    right: -100%;
+                }
+                
+                .theme-settings-btn {
+                    top: 10px;
+                    right: 10px;
+                    width: 45px;
+                    height: 45px;
+                }
+                
+                .theme-bg-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            
+            /* 平滑过渡 */
+            .container, .card {
+                transition: background-color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+            }
         </style>
     </head>
     <body>
+        <!-- Argon 主题设置按钮 -->
+        <button class="theme-settings-btn" onclick="toggleThemePanel()" title="主题设置">
+            ⚙️
+        </button>
+        
+        <!-- 主题设置面板遮罩 -->
+        <div class="theme-panel-overlay" id="themePanelOverlay" onclick="toggleThemePanel()"></div>
+        
+        <!-- Argon 主题设置面板 -->
+        <div class="theme-panel" id="themePanel">
+            <div class="theme-panel-header">
+                <div class="theme-panel-title">
+                    🎨 Argon 主题设置
+                </div>
+                <button class="theme-panel-close" onclick="toggleThemePanel()">✕</button>
+            </div>
+            
+            <div class="theme-panel-body">
+                <!-- 主题模式 -->
+                <div class="theme-section">
+                    <div class="theme-section-title">🌓 主题模式</div>
+                    <div class="theme-mode-btns">
+                        <button class="theme-mode-btn" data-mode="auto" onclick="setThemeMode('auto')">自动</button>
+                        <button class="theme-mode-btn" data-mode="light" onclick="setThemeMode('light')">浅色</button>
+                        <button class="theme-mode-btn" data-mode="dark" onclick="setThemeMode('dark')">深色</button>
+                    </div>
+                </div>
+                
+                <!-- 背景设置 -->
+                <div class="theme-section">
+                    <div class="theme-section-title">🖼️ 背景来源</div>
+                    <div class="theme-option">
+                        <select class="theme-select" id="bgSource" onchange="changeBgSource()">
+                            <option value="preset">内建背景</option>
+                            <option value="bing">Bing 每日壁纸</option>
+                            <option value="unsplash">Unsplash</option>
+                            <option value="wallhaven">Wallhaven</option>
+                            <option value="custom">自定义 URL</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 预设背景库 -->
+                    <div id="presetBgSection" style="display: block;">
+                        <div class="theme-bg-grid" id="presetBgGrid"></div>
+                    </div>
+                    
+                    <!-- 自定义 URL -->
+                    <div id="customBgSection" style="display: none;">
+                        <input type="text" class="theme-input" id="customBgUrl" placeholder="输入图片 URL" onchange="applyCustomBg()">
+                    </div>
+                </div>
+                
+                <!-- 透明度设置 -->
+                <div class="theme-section">
+                    <div class="theme-section-title">💫 透明度设置</div>
+                    <div class="theme-option">
+                        <label class="theme-label">
+                            浅色模式透明度 
+                            <span class="slider-value" id="lightOpacityValue">0.98</span>
+                        </label>
+                        <input type="range" class="theme-slider" id="lightOpacity" min="0.5" max="1" step="0.05" value="0.98" oninput="updateOpacity()">
+                    </div>
+                    <div class="theme-option">
+                        <label class="theme-label">
+                            深色模式透明度 
+                            <span class="slider-value" id="darkOpacityValue">0.95</span>
+                        </label>
+                        <input type="range" class="theme-slider" id="darkOpacity" min="0.5" max="1" step="0.05" value="0.95" oninput="updateOpacity()">
+                    </div>
+                </div>
+                
+                <!-- 模糊效果 -->
+                <div class="theme-section">
+                    <div class="theme-section-title">🌀 毛玻璃模糊</div>
+                    <div class="theme-option">
+                        <label class="theme-label">
+                            模糊半径 
+                            <span class="slider-value"><span id="blurValue">20</span>px</span>
+                        </label>
+                        <input type="range" class="theme-slider" id="blurRadius" min="0" max="40" step="2" value="20" oninput="updateBlur()">
+                    </div>
+                </div>
+                
+                <!-- 主色调 -->
+                <div class="theme-section">
+                    <div class="theme-section-title">🎨 主色调</div>
+                    <div class="theme-option">
+                        <label class="theme-label">选择主色调</label>
+                        <input type="color" class="theme-input" id="primaryColor" value="#5e72e4" onchange="updatePrimaryColor()">
+                        <div class="color-preview" id="colorPreview" style="background: #5e72e4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // ========== Argon 主题管理系统 ==========
+            
+            // 预设背景库（使用渐变背景）
+            const presetBackgrounds = [
+                { id: 'gradient1', style: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+                { id: 'gradient2', style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+                { id: 'gradient3', style: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+                { id: 'gradient4', style: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+                { id: 'gradient5', style: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+                { id: 'gradient6', style: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+                { id: 'gradient7', style: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+                { id: 'gradient8', style: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
+                { id: 'gradient9', style: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+                { id: 'gradient10', style: 'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)' },
+                { id: 'gradient11', style: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)' },
+                { id: 'gradient12', style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
+            ];
+            
+            // 主题配置
+            let themeConfig = {
+                mode: 'auto',
+                bgSource: 'preset',
+                bgValue: 'gradient1',
+                lightOpacity: 0.98,
+                darkOpacity: 0.95,
+                blurRadius: 20,
+                primaryColor: '#5e72e4'
+            };
+            
+            // 初始化主题
+            function initTheme() {
+                // 从 localStorage 加载配置
+                const saved = localStorage.getItem('argon_theme_config');
+                if (saved) {
+                    try {
+                        themeConfig = JSON.parse(saved);
+                    } catch (e) {
+                        console.error('加载主题配置失败', e);
+                    }
+                }
+                
+                // 渲染预设背景库
+                renderPresetBackgrounds();
+                
+                // 应用保存的配置
+                applyThemeConfig();
+                
+                // 更新UI状态
+                updateUIState();
+            }
+            
+            // 渲染预设背景库
+            function renderPresetBackgrounds() {
+                const grid = document.getElementById('presetBgGrid');
+                if (!grid) return;
+                
+                grid.innerHTML = presetBackgrounds.map(bg => 
+                    \`<div class="theme-bg-item \${themeConfig.bgValue === bg.id ? 'active' : ''}" 
+                         style="background: \${bg.style}" 
+                         onclick="selectPresetBg('\${bg.id}')"></div>\`
+                ).join('');
+            }
+            
+            // 切换主题面板
+            function toggleThemePanel() {
+                const panel = document.getElementById('themePanel');
+                const overlay = document.getElementById('themePanelOverlay');
+                const isActive = panel.classList.contains('active');
+                
+                if (isActive) {
+                    panel.classList.remove('active');
+                    overlay.classList.remove('active');
+                } else {
+                    panel.classList.add('active');
+                    overlay.classList.add('active');
+                }
+            }
+            
+            // 设置主题模式
+            function setThemeMode(mode) {
+                themeConfig.mode = mode;
+                saveThemeConfig();
+                applyThemeMode();
+                updateUIState();
+            }
+            
+            // 应用主题模式
+            function applyThemeMode() {
+                const body = document.body;
+                const mode = themeConfig.mode;
+                
+                if (mode === 'dark') {
+                    body.classList.add('dark-mode');
+                } else if (mode === 'light') {
+                    body.classList.remove('dark-mode');
+                } else {
+                    // 自动模式：根据时间判断（18:00-6:00 为深色）
+                    const hour = new Date().getHours();
+                    if (hour >= 18 || hour < 6) {
+                        body.classList.add('dark-mode');
+                    } else {
+                        body.classList.remove('dark-mode');
+                    }
+                }
+            }
+            
+            // 更改背景来源
+            function changeBgSource() {
+                const source = document.getElementById('bgSource').value;
+                themeConfig.bgSource = source;
+                
+                // 显示/隐藏对应部分
+                document.getElementById('presetBgSection').style.display = source === 'preset' ? 'block' : 'none';
+                document.getElementById('customBgSection').style.display = source === 'custom' ? 'block' : 'none';
+                
+                // 应用背景
+                if (source === 'bing') {
+                    applyBingWallpaper();
+                } else if (source === 'unsplash') {
+                    applyUnsplashWallpaper();
+                } else if (source === 'wallhaven') {
+                    applyWallhavenWallpaper();
+                } else if (source === 'preset') {
+                    applyPresetBackground();
+                }
+                
+                saveThemeConfig();
+            }
+            
+            // 选择预设背景
+            function selectPresetBg(id) {
+                themeConfig.bgValue = id;
+                saveThemeConfig();
+                applyPresetBackground();
+                renderPresetBackgrounds();
+            }
+            
+            // 应用预设背景
+            function applyPresetBackground() {
+                const bg = presetBackgrounds.find(b => b.id === themeConfig.bgValue);
+                if (bg) {
+                    document.body.style.background = bg.style;
+                    document.body.classList.add('custom-bg');
+                }
+            }
+            
+            // 应用自定义背景
+            function applyCustomBg() {
+                const url = document.getElementById('customBgUrl').value;
+                if (url) {
+                    themeConfig.bgValue = url;
+                    document.body.style.background = \`url(\${url})\`;
+                    document.body.classList.add('custom-bg');
+                    saveThemeConfig();
+                }
+            }
+            
+            // 应用 Bing 壁纸
+            function applyBingWallpaper() {
+                // 使用 Bing 每日壁纸 API
+                const bingUrl = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1';
+                fetch(bingUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.images && data.images[0]) {
+                            const imageUrl = 'https://www.bing.com' + data.images[0].url;
+                            themeConfig.bgValue = imageUrl;
+                            document.body.style.background = \`url(\${imageUrl})\`;
+                            document.body.classList.add('custom-bg');
+                            saveThemeConfig();
+                        }
+                    })
+                    .catch(err => {
+                        console.error('加载 Bing 壁纸失败', err);
+                        alert('加载 Bing 壁纸失败，请检查网络连接');
+                    });
+            }
+            
+            // 应用 Unsplash 壁纸
+            function applyUnsplashWallpaper() {
+                const unsplashUrl = 'https://source.unsplash.com/random/1920x1080';
+                themeConfig.bgValue = unsplashUrl;
+                document.body.style.background = \`url(\${unsplashUrl})\`;
+                document.body.classList.add('custom-bg');
+                saveThemeConfig();
+            }
+            
+            // 应用 Wallhaven 壁纸
+            function applyWallhavenWallpaper() {
+                const wallhavenUrl = 'https://w.wallhaven.cc/full/pk/wallhaven-pkz5my.jpg';
+                themeConfig.bgValue = wallhavenUrl;
+                document.body.style.background = \`url(\${wallhavenUrl})\`;
+                document.body.classList.add('custom-bg');
+                saveThemeConfig();
+            }
+            
+            // 更新透明度
+            function updateOpacity() {
+                themeConfig.lightOpacity = parseFloat(document.getElementById('lightOpacity').value);
+                themeConfig.darkOpacity = parseFloat(document.getElementById('darkOpacity').value);
+                
+                document.getElementById('lightOpacityValue').textContent = themeConfig.lightOpacity.toFixed(2);
+                document.getElementById('darkOpacityValue').textContent = themeConfig.darkOpacity.toFixed(2);
+                
+                document.documentElement.style.setProperty('--theme-opacity', themeConfig.lightOpacity);
+                
+                saveThemeConfig();
+            }
+            
+            // 更新模糊
+            function updateBlur() {
+                themeConfig.blurRadius = parseInt(document.getElementById('blurRadius').value);
+                document.getElementById('blurValue').textContent = themeConfig.blurRadius;
+                document.documentElement.style.setProperty('--theme-blur', themeConfig.blurRadius + 'px');
+                saveThemeConfig();
+            }
+            
+            // 更新主色调
+            function updatePrimaryColor() {
+                themeConfig.primaryColor = document.getElementById('primaryColor').value;
+                document.getElementById('colorPreview').style.background = themeConfig.primaryColor;
+                document.documentElement.style.setProperty('--argon-primary', themeConfig.primaryColor);
+                saveThemeConfig();
+            }
+            
+            // 更新UI状态
+            function updateUIState() {
+                // 更新主题模式按钮
+                document.querySelectorAll('.theme-mode-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === themeConfig.mode);
+                });
+                
+                // 更新背景来源
+                if (document.getElementById('bgSource')) {
+                    document.getElementById('bgSource').value = themeConfig.bgSource;
+                }
+                
+                // 更新滑块
+                if (document.getElementById('lightOpacity')) {
+                    document.getElementById('lightOpacity').value = themeConfig.lightOpacity;
+                    document.getElementById('lightOpacityValue').textContent = themeConfig.lightOpacity.toFixed(2);
+                }
+                if (document.getElementById('darkOpacity')) {
+                    document.getElementById('darkOpacity').value = themeConfig.darkOpacity;
+                    document.getElementById('darkOpacityValue').textContent = themeConfig.darkOpacity.toFixed(2);
+                }
+                if (document.getElementById('blurRadius')) {
+                    document.getElementById('blurRadius').value = themeConfig.blurRadius;
+                    document.getElementById('blurValue').textContent = themeConfig.blurRadius;
+                }
+                if (document.getElementById('primaryColor')) {
+                    document.getElementById('primaryColor').value = themeConfig.primaryColor;
+                    document.getElementById('colorPreview').style.background = themeConfig.primaryColor;
+                }
+            }
+            
+            // 应用主题配置
+            function applyThemeConfig() {
+                // 应用主题模式
+                applyThemeMode();
+                
+                // 应用背景
+                if (themeConfig.bgSource === 'preset') {
+                    applyPresetBackground();
+                } else if (themeConfig.bgSource === 'custom') {
+                    if (themeConfig.bgValue) {
+                        document.body.style.background = \`url(\${themeConfig.bgValue})\`;
+                        document.body.classList.add('custom-bg');
+                    }
+                } else if (themeConfig.bgSource === 'bing' || themeConfig.bgSource === 'unsplash' || themeConfig.bgSource === 'wallhaven') {
+                    if (themeConfig.bgValue) {
+                        document.body.style.background = \`url(\${themeConfig.bgValue})\`;
+                        document.body.classList.add('custom-bg');
+                    }
+                }
+                
+                // 应用CSS变量
+                document.documentElement.style.setProperty('--theme-opacity', themeConfig.lightOpacity);
+                document.documentElement.style.setProperty('--theme-blur', themeConfig.blurRadius + 'px');
+                document.documentElement.style.setProperty('--argon-primary', themeConfig.primaryColor);
+            }
+            
+            // 保存主题配置
+            function saveThemeConfig() {
+                localStorage.setItem('argon_theme_config', JSON.stringify(themeConfig));
+            }
+            
+            // 页面加载时初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                initTheme();
+            });
+        </script>
+        
         <div class="container">
             <div class="header">
                     <h1 class="title">${t.title}</h1>
