@@ -3215,6 +3215,13 @@ async function handleSubscriptionPage(request, user = null) {
                     const currentIP = document.getElementById('currentIP');
                     const regionMatch = document.getElementById('regionMatch');
                     
+                    // 获取状态点元素
+                    const regionDot = document.getElementById('regionDot');
+                    const geoDot = document.getElementById('geoDot');
+                    const backupDot = document.getElementById('backupDot');
+                    const currentIPDot = document.getElementById('currentIPDot');
+                    const regionMatchDot = document.getElementById('regionMatchDot');
+                    
                         // 获取当前语言设置（优先从Cookie/localStorage读取）
                         function getCookie(name) {
                             const value = '; ' + document.cookie;
@@ -3254,6 +3261,7 @@ async function handleSubscriptionPage(request, user = null) {
                     let detectedRegion = 'US'; // 默认值
                     let isCustomIPMode = false;
                     let isManualRegionMode = false;
+                    let hasError = false;
                     try {
                         const response = await fetch(window.location.pathname + '/region');
                         const data = await response.json();
@@ -3268,10 +3276,19 @@ async function handleSubscriptionPage(request, user = null) {
                                 geoInfo.innerHTML = t.detectionMethod + '<span style="color: #f59e0b;">⚙️ ' + t.customIPMode + '</span>';
                                 regionStatus.innerHTML = t.workerRegion + '<span style="color: #f59e0b;">🔧 ' + t.customIPModeDesc + '</span>';
                             
+                            // 更新状态点
+                                if (regionDot) regionDot.style.background = '#f59e0b';
+                                if (geoDot) geoDot.style.background = '#f59e0b';
+                            
                             // 显示自定义IP配置状态，包含具体IP
                                 if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #f59e0b;">🔧 ' + t.usingCustomProxyIP + customIPInfo + '</span>';
                                 if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + customIPInfo + t.customIPConfig + '</span>';
                                 if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #f59e0b;">⚠️ ' + t.customIPModeDisabled + '</span>';
+                            
+                            // 更新状态点
+                                if (backupDot) backupDot.style.background = '#f59e0b';
+                                if (currentIPDot) currentIPDot.style.background = '#22c55e';
+                                if (regionMatchDot) regionMatchDot.style.background = '#f59e0b';
                             
                             return; // 提前返回，不执行后续的地区匹配逻辑
                             } else if (data.detectionMethod === '手动指定地区' || data.detectionMethod === 'تعیین منطقه دستی') {
@@ -3281,10 +3298,19 @@ async function handleSubscriptionPage(request, user = null) {
                                 geoInfo.innerHTML = t.detectionMethod + '<span style="color: #666;">' + t.manualRegion + '</span>';
                                 regionStatus.innerHTML = t.workerRegion + '<span style="color: #22c55e;">🎯 ' + t.regionNames[detectedRegion] + t.manualRegionDesc + '</span>';
                             
+                            // 更新状态点
+                                if (regionDot) regionDot.style.background = '#22c55e';
+                                if (geoDot) geoDot.style.background = '#22c55e';
+                            
                             // 显示配置状态而不是检测状态
                                 if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #22c55e;">✅ ' + t.proxyIPAvailable + '</span>';
                                 if (currentIP) currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + t.smartSelection + '</span>';
                                 if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #22c55e;">✅ ' + t.sameRegionIP + '</span>';
+                            
+                            // 更新状态点
+                                if (backupDot) backupDot.style.background = '#22c55e';
+                                if (currentIPDot) currentIPDot.style.background = '#22c55e';
+                                if (regionMatchDot) regionMatchDot.style.background = '#22c55e';
                             
                             return; // 提前返回，不执行后续的地区匹配逻辑
                             } else if (data.region && t.regionNames[data.region]) {
@@ -3292,25 +3318,32 @@ async function handleSubscriptionPage(request, user = null) {
                         }
                         
                             geoInfo.innerHTML = t.detectionMethod + '<span style="color: #666;">' + t.cloudflareDetection + '</span>';
+                            if (geoDot) geoDot.style.background = '#22c55e';
                         
                     } catch (e) {
+                            hasError = true;
                             geoInfo.innerHTML = t.detectionMethod + '<span style="color: #ef4444;">' + t.detectionFailed + '</span>';
+                            if (geoDot) geoDot.style.background = '#ef4444';
                     }
                     
                         regionStatus.innerHTML = t.workerRegion + '<span style="color: #22c55e;">✅ ' + t.regionNames[detectedRegion] + '</span>';
+                        if (regionDot) regionDot.style.background = '#22c55e';
                     
                     // 直接显示配置状态，不再进行检测
                     if (backupStatus) {
                             backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #22c55e;">✅ ' + t.proxyIPAvailable + '</span>';
                             document.getElementById('backupTag').style.display = 'inline-block';
+                            if (backupDot) backupDot.style.background = '#22c55e';
                     }
                     
                     if (currentIP) {
                             currentIP.innerHTML = t.currentIP + '<span style="color: #22c55e;">✅ ' + t.smartSelection + '</span>';
+                            if (currentIPDot) currentIPDot.style.background = '#22c55e';
                     }
                     
                     if (regionMatch) {
                             regionMatch.innerHTML = t.regionMatch + '<span style="color: #22c55e;">✅ ' + t.sameRegionIP + '</span>';
+                            if (regionMatchDot) regionMatchDot.style.background = '#22c55e';
                     }
                     
                 } catch (error) {
@@ -3337,6 +3370,18 @@ async function handleSubscriptionPage(request, user = null) {
                         document.getElementById('backupStatus').innerHTML = t.proxyIPStatus + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
                         document.getElementById('currentIP').innerHTML = t.currentIP + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
                         document.getElementById('regionMatch').innerHTML = t.regionMatch + '<span style="color: #ef4444;">❌ ' + t.detectionFailed + '</span>';
+                        
+                        // 更新所有状态点为红色
+                        const regionDot = document.getElementById('regionDot');
+                        const geoDot = document.getElementById('geoDot');
+                        const backupDot = document.getElementById('backupDot');
+                        const currentIPDot = document.getElementById('currentIPDot');
+                        const regionMatchDot = document.getElementById('regionMatchDot');
+                        if (regionDot) regionDot.style.background = '#ef4444';
+                        if (geoDot) geoDot.style.background = '#ef4444';
+                        if (backupDot) backupDot.style.background = '#ef4444';
+                        if (currentIPDot) currentIPDot.style.background = '#ef4444';
+                        if (regionMatchDot) regionMatchDot.style.background = '#ef4444';
                 }
             }
             
@@ -3558,7 +3603,7 @@ async function handleSubscriptionPage(request, user = null) {
             }
             
             // 更新wk地区选择的启用/禁用状态
-            function updateWkRegionState() {
+            async function updateWkRegionState() {
                 const customIPInput = document.getElementById('customIP');
                 const wkRegion = document.getElementById('wkRegion');
                 const wkRegionHint = document.getElementById('wkRegionHint');
@@ -3596,6 +3641,7 @@ async function handleSubscriptionPage(request, user = null) {
             async function checkErrorLogsCount() {
                 try {
                     const response = await fetch('/api/error-logs?limit=1');
+                    const errorLogsDot = document.getElementById('errorLogsDot');
                     if (response.ok) {
                         const data = await response.json();
                         const totalCount = data.total || 0;
@@ -3605,22 +3651,34 @@ async function handleSubscriptionPage(request, user = null) {
                             if (totalCount === 0) {
                                 errorLogsCountEl.textContent = '0 条';
                                 errorLogsCountEl.style.color = '#666';
+                                if (errorLogsDot) errorLogsDot.style.background = '#666';
                             } else {
                                 errorLogsCountEl.textContent = totalCount + ' 条';
                                 if (errorCount > 0) {
                                     errorLogsCountEl.style.color = '#ff6b6b';
+                                    if (errorLogsDot) errorLogsDot.style.background = '#ff6b6b';
                                 } else {
                                     errorLogsCountEl.style.color = '#22c55e';
+                                    if (errorLogsDot) errorLogsDot.style.background = '#22c55e';
                                 }
                             }
                         }
+                    } else {
+                        const errorLogsCountEl = document.getElementById('errorLogsCount');
+                        if (errorLogsCountEl) {
+                            errorLogsCountEl.textContent = '加载失败';
+                            errorLogsCountEl.style.color = '#ff6b6b';
+                        }
+                        if (errorLogsDot) errorLogsDot.style.background = '#ff6b6b';
                     }
                 } catch (error) {
                     const errorLogsCountEl = document.getElementById('errorLogsCount');
+                    const errorLogsDot = document.getElementById('errorLogsDot');
                     if (errorLogsCountEl) {
                         errorLogsCountEl.textContent = '加载失败';
                         errorLogsCountEl.style.color = '#ff6b6b';
                     }
+                    if (errorLogsDot) errorLogsDot.style.background = '#ff6b6b';
                 }
             }
             
@@ -3830,6 +3888,7 @@ async function handleSubscriptionPage(request, user = null) {
             document.addEventListener('DOMContentLoaded', function() {
                 checkSystemStatus();
                 checkKVStatus();
+                checkErrorLogsCount();
                 
                 // 监听customIP输入框变化，实时更新wk地区选择状态
                 const customIPInput = document.getElementById('customIP');
