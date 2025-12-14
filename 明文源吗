@@ -1927,6 +1927,25 @@ async function handleWsRequest(request) {
     try {
         console.log('[WS-DEBUG] WebSocket request received');
 
+        // 解析RDP参数（如果存在）
+        let rdpTargetHost = null;
+        let rdpTargetPort = null;
+        try {
+            const url = new URL(request.url);
+            const rdpParam = url.searchParams.get('rdp');
+            if (rdpParam) {
+                // RDP参数格式: serverIP:serverPort:localPort
+                const rdpParts = rdpParam.split(':');
+                if (rdpParts.length >= 2) {
+                    rdpTargetHost = rdpParts[0];
+                    rdpTargetPort = parseInt(rdpParts[1], 10);
+                    console.log('[WS-DEBUG] RDP加速模式已启用，目标服务器:', rdpTargetHost + ':' + rdpTargetPort);
+                }
+            }
+        } catch (e) {
+            console.log('[WS-DEBUG] 解析RDP参数失败:', e.message);
+        }
+
         // 检测并设置当前Worker地区，确保WebSocket请求能正确进行就近匹配
         if (!currentWorkerRegion || currentWorkerRegion === '') {
             if (manualWorkerRegion && manualWorkerRegion.trim()) {
@@ -2004,7 +2023,16 @@ async function handleWsRequest(request) {
                         if (!vlessResult.hasError) {
                             protocolType = 'vless';
                             console.log('[WS-DEBUG] VLESS protocol detected successfully');
-                            const { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
+                            let { addressType, port, hostname, rawIndex, version, isUDP } = vlessResult;
+                            
+                            // 如果存在RDP参数，使用RDP目标地址和端口替代数据包中的地址
+                            if (rdpTargetHost && rdpTargetPort) {
+                                hostname = rdpTargetHost;
+                                port = rdpTargetPort;
+                                addressType = 1; // IPv4
+                                console.log('[WS-DEBUG] 使用RDP加速目标:', hostname + ':' + port);
+                            }
+                            
                             console.log('[WS-DEBUG] VLESS target:', hostname + ':' + port, 'UDP:', isUDP);
 
                             if (isUDP) {
