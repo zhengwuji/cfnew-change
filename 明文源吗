@@ -3082,6 +3082,7 @@ async function handleSubscriptionPage(request, user = null) {
         
         <script>
             // ========== Argon 主题管理系统 ==========
+            // 立即定义全局函数，确保 onclick 事件可以访问
             
             // 预设背景库（使用渐变背景）
             const presetBackgrounds = [
@@ -3099,8 +3100,8 @@ async function handleSubscriptionPage(request, user = null) {
                 { id: 'gradient12', style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
             ];
             
-            // 主题配置
-            let themeConfig = {
+            // 主题配置（全局变量）
+            window.themeConfig = {
                 mode: 'auto',
                 bgSource: 'preset',
                 bgValue: 'gradient1',
@@ -3144,8 +3145,8 @@ async function handleSubscriptionPage(request, user = null) {
                 ).join('');
             }
             
-            // 切换主题面板
-            function toggleThemePanel() {
+            // 切换主题面板（全局函数）
+            window.toggleThemePanel = function() {
                 const panel = document.getElementById('themePanel');
                 const overlay = document.getElementById('themePanelOverlay');
                 const isActive = panel.classList.contains('active');
@@ -3159,9 +3160,9 @@ async function handleSubscriptionPage(request, user = null) {
                 }
             }
             
-            // 设置主题模式
-            function setThemeMode(mode) {
-                themeConfig.mode = mode;
+            // 设置主题模式（全局函数）
+            window.setThemeMode = function(mode) {
+                window.themeConfig.mode = mode;
                 saveThemeConfig();
                 applyThemeMode();
                 updateUIState();
@@ -3187,10 +3188,10 @@ async function handleSubscriptionPage(request, user = null) {
                 }
             }
             
-            // 更改背景来源
-            function changeBgSource() {
+            // 更改背景来源（全局函数）
+            window.changeBgSource = function() {
                 const source = document.getElementById('bgSource').value;
-                themeConfig.bgSource = source;
+                window.themeConfig.bgSource = source;
                 
                 // 显示/隐藏对应部分
                 document.getElementById('presetBgSection').style.display = source === 'preset' ? 'block' : 'none';
@@ -3210,9 +3211,9 @@ async function handleSubscriptionPage(request, user = null) {
                 saveThemeConfig();
             }
             
-            // 选择预设背景
-            function selectPresetBg(id) {
-                themeConfig.bgValue = id;
+            // 选择预设背景（全局函数）
+            window.selectPresetBg = function(id) {
+                window.themeConfig.bgValue = id;
                 saveThemeConfig();
                 applyPresetBackground();
                 renderPresetBackgrounds();
@@ -3227,11 +3228,11 @@ async function handleSubscriptionPage(request, user = null) {
                 }
             }
             
-            // 应用自定义背景
-            function applyCustomBg() {
+            // 应用自定义背景（全局函数）
+            window.applyCustomBg = function() {
                 const url = document.getElementById('customBgUrl').value;
                 if (url) {
-                    themeConfig.bgValue = url;
+                    window.themeConfig.bgValue = url;
                     document.body.style.background = \`url(\${url})\`;
                     document.body.classList.add('custom-bg');
                     saveThemeConfig();
@@ -3339,32 +3340,32 @@ async function handleSubscriptionPage(request, user = null) {
                 saveThemeConfig();
             }
             
-            // 更新透明度
-            function updateOpacity() {
-                themeConfig.lightOpacity = parseFloat(document.getElementById('lightOpacity').value);
-                themeConfig.darkOpacity = parseFloat(document.getElementById('darkOpacity').value);
+            // 更新透明度（全局函数）
+            window.updateOpacity = function() {
+                window.themeConfig.lightOpacity = parseFloat(document.getElementById('lightOpacity').value);
+                window.themeConfig.darkOpacity = parseFloat(document.getElementById('darkOpacity').value);
                 
-                document.getElementById('lightOpacityValue').textContent = themeConfig.lightOpacity.toFixed(2);
-                document.getElementById('darkOpacityValue').textContent = themeConfig.darkOpacity.toFixed(2);
+                document.getElementById('lightOpacityValue').textContent = window.themeConfig.lightOpacity.toFixed(2);
+                document.getElementById('darkOpacityValue').textContent = window.themeConfig.darkOpacity.toFixed(2);
                 
-                document.documentElement.style.setProperty('--theme-opacity', themeConfig.lightOpacity);
+                document.documentElement.style.setProperty('--theme-opacity', window.themeConfig.lightOpacity);
                 
                 saveThemeConfig();
             }
             
-            // 更新模糊
-            function updateBlur() {
-                themeConfig.blurRadius = parseInt(document.getElementById('blurRadius').value);
-                document.getElementById('blurValue').textContent = themeConfig.blurRadius;
-                document.documentElement.style.setProperty('--theme-blur', themeConfig.blurRadius + 'px');
+            // 更新模糊（全局函数）
+            window.updateBlur = function() {
+                window.themeConfig.blurRadius = parseInt(document.getElementById('blurRadius').value);
+                document.getElementById('blurValue').textContent = window.themeConfig.blurRadius;
+                document.documentElement.style.setProperty('--theme-blur', window.themeConfig.blurRadius + 'px');
                 saveThemeConfig();
             }
             
-            // 更新主色调
-            function updatePrimaryColor() {
-                themeConfig.primaryColor = document.getElementById('primaryColor').value;
-                document.getElementById('colorPreview').style.background = themeConfig.primaryColor;
-                document.documentElement.style.setProperty('--argon-primary', themeConfig.primaryColor);
+            // 更新主色调（全局函数）
+            window.updatePrimaryColor = function() {
+                window.themeConfig.primaryColor = document.getElementById('primaryColor').value;
+                document.getElementById('colorPreview').style.background = window.themeConfig.primaryColor;
+                document.documentElement.style.setProperty('--argon-primary', window.themeConfig.primaryColor);
                 saveThemeConfig();
             }
             
