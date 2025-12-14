@@ -2711,6 +2711,12 @@ async function handleSubscriptionPage(request, user = null) {
                             <span class="status-dot" id="logicDot"></span>
                             <span id="selectionLogic" style="color: #666; font-size: 0.875rem;">${t.selectionLogic}${t.selectionLogicText}</span>
                         </div>
+                        <div class="status-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                            <span class="status-dot" id="errorLogsDot" style="background: #ff6b6b;"></span>
+                            <span id="errorLogsStatus" style="color: #333; font-weight: 500;">错误日志: <span id="errorLogsCount">加载中...</span></span>
+                            <button id="downloadErrorLogsBtn" onclick="downloadErrorLogs()" style="margin-left: 10px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">📥 下载日志</button>
+                            <button id="viewErrorLogsBtn" onclick="window.open('/error-logs', '_blank')" style="margin-left: 5px; padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">🔍 查看日志</button>
+                        </div>
                 </div>
             </div>
             <div class="card" id="configCard" style="display: none;">
@@ -3579,6 +3585,125 @@ async function handleSubscriptionPage(request, user = null) {
                         if (wkRegionHint) {
                             wkRegionHint.style.display = 'none';
                         }
+                    }
+                }
+                
+                // 检查错误日志数量
+                await checkErrorLogsCount();
+            }
+            
+            // 检查错误日志数量
+            async function checkErrorLogsCount() {
+                try {
+                    const response = await fetch('/api/error-logs?limit=1');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const totalCount = data.total || 0;
+                        const errorCount = data.logs.filter(log => log.type !== 'String').length;
+                        const errorLogsCountEl = document.getElementById('errorLogsCount');
+                        if (errorLogsCountEl) {
+                            if (totalCount === 0) {
+                                errorLogsCountEl.textContent = '0 条';
+                                errorLogsCountEl.style.color = '#666';
+                            } else {
+                                errorLogsCountEl.textContent = totalCount + ' 条';
+                                if (errorCount > 0) {
+                                    errorLogsCountEl.style.color = '#ff6b6b';
+                                } else {
+                                    errorLogsCountEl.style.color = '#22c55e';
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    const errorLogsCountEl = document.getElementById('errorLogsCount');
+                    if (errorLogsCountEl) {
+                        errorLogsCountEl.textContent = '加载失败';
+                        errorLogsCountEl.style.color = '#ff6b6b';
+                    }
+                }
+            }
+            
+            // 下载错误日志
+            async function downloadErrorLogs() {
+                try {
+                    const btn = document.getElementById('downloadErrorLogsBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = '下载中...';
+                    }
+                    
+                    const response = await fetch('/api/error-logs?limit=1000');
+                    if (!response.ok) {
+                        throw new Error('获取日志失败: ' + response.status);
+                    }
+                    
+                    const data = await response.json();
+                    const logs = data.logs || [];
+                    
+                    if (logs.length === 0) {
+                        alert('当前没有错误日志');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = '📥 下载日志';
+                        }
+                        return;
+                    }
+                    
+                    // 格式化日志为文本
+                    const logText = logs.map(log => {
+                        let text = \`[${log.timestamp}] [${log.context}] ${log.message}\`;
+                        if (log.stack) {
+                            text += \`\\n堆栈:\\n${log.stack}\`;
+                        }
+                        if (log.url) {
+                            text += \`\\nURL: ${log.url}\`;
+                        }
+                        if (log.method) {
+                            text += \`\\n方法: ${log.method}\`;
+                        }
+                        if (log.workerRegion) {
+                            text += \`\\n地区: ${log.workerRegion}\`;
+                        }
+                        return text;
+                    }).join('\\n\\n' + '='.repeat(80) + '\\n\\n');
+                    
+                    // 创建下载
+                    const dataBlob = new Blob([logText], { type: 'text/plain; charset=utf-8' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'error-logs-' + new Date().toISOString().split('T')[0] + '-' + Date.now() + '.txt';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // 同时下载JSON格式
+                    const jsonBlob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json; charset=utf-8' });
+                    const jsonUrl = URL.createObjectURL(jsonBlob);
+                    const jsonLink = document.createElement('a');
+                    jsonLink.href = jsonUrl;
+                    jsonLink.download = 'error-logs-' + new Date().toISOString().split('T')[0] + '-' + Date.now() + '.json';
+                    document.body.appendChild(jsonLink);
+                    setTimeout(() => {
+                        jsonLink.click();
+                        document.body.removeChild(jsonLink);
+                        URL.revokeObjectURL(jsonUrl);
+                    }, 300);
+                    
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '📥 下载日志';
+                    }
+                    
+                    alert('错误日志已下载（TXT和JSON格式）');
+                } catch (error) {
+                    alert('下载失败: ' + error.message);
+                    const btn = document.getElementById('downloadErrorLogsBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '📥 下载日志';
                     }
                 }
             }
