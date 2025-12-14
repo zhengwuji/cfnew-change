@@ -117,6 +117,7 @@ function logError(error, context = 'Unknown', extra = {}) {
             method: extra.method || '',
             user: extra.user || '',
             workerRegion: extra.workerRegion || currentWorkerRegion || '',
+            statusCode: extra.statusCode || '',
             extra: JSON.stringify(extra)
         };
         
@@ -132,10 +133,76 @@ function logError(error, context = 'Unknown', extra = {}) {
         if (errorEntry.stack) {
             console.error(`[ERROR-STACK] ${errorEntry.stack}`);
         }
+        if (errorEntry.statusCode) {
+            console.error(`[ERROR-STATUS] HTTP ${errorEntry.statusCode}`);
+        }
     } catch (logErr) {
         // 如果记录日志本身出错，只输出到控制台
         console.error('[ERROR-LOG] Failed to log error:', logErr);
     }
+}
+
+/**
+ * 记录 HTTP 错误响应
+ * @param {number} statusCode - HTTP 状态码
+ * @param {string} message - 错误消息
+ * @param {string} context - 错误发生的上下文
+ * @param {Object} extra - 额外的错误信息
+ */
+function logHTTPError(statusCode, message, context = 'HTTPError', extra = {}) {
+    // 只记录 4xx 和 5xx 错误
+    if (statusCode >= 400) {
+        logError(new Error(`HTTP ${statusCode}: ${message}`), context, {
+            ...extra,
+            statusCode: statusCode
+        });
+    }
+}
+
+/**
+ * 创建响应并自动记录错误
+ * @param {string|Object} body - 响应体
+ * @param {Object} options - 响应选项（status, headers等）
+ * @param {string} context - 上下文
+ * @param {Object} extra - 额外信息
+ * @returns {Response}
+ */
+function createResponse(body, options = {}, context = 'Response', extra = {}) {
+    const status = options.status || 200;
+    
+    // 如果是错误响应，记录日志
+    if (status >= 400) {
+        let message = '';
+        if (typeof body === 'string') {
+            message = body;
+        } else if (body && typeof body === 'object') {
+            try {
+                message = JSON.stringify(body);
+            } catch (e) {
+                message = 'Error response';
+            }
+        }
+        logHTTPError(status, message, context, {
+            ...extra,
+            url: extra.url || '',
+            method: extra.method || '',
+            user: extra.user || '',
+            workerRegion: extra.workerRegion || currentWorkerRegion || ''
+        });
+    }
+    
+    // 创建响应
+    if (typeof body === 'object' && !(body instanceof Response)) {
+        return new Response(JSON.stringify(body), {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                ...options.headers
+            }
+        });
+    }
+    
+    return new Response(body, options);
 }
 
 /**
@@ -661,6 +728,10 @@ export default {
                         },
                     });
                 }
+                logHTTPError(500, 'Internal Server Error - XHTTP POST handler failed', 'MainHandler', {
+                    method: request.method,
+                    workerRegion: currentWorkerRegion || 'unknown'
+                });
                 return new Response('Internal Server Error', { status: 500 });
             }
 
@@ -1451,10 +1522,17 @@ export default {
                     //     return await handleSubscriptionRequest(request, at);
                     // }
                 }
-                return new Response(JSON.stringify({ error: 'Not Found' }), {
+                const notFoundResponse = new Response(JSON.stringify({ error: 'Not Found' }), {
                     status: 404,
                     headers: { 'Content-Type': 'application/json' }
                 });
+                logHTTPError(404, 'Not Found', 'MainHandler', {
+                    url: url.pathname,
+                    method: request.method,
+                    user: envUKey || 'unknown',
+                    workerRegion: currentWorkerRegion || 'unknown'
+                });
+                return notFoundResponse;
             }
         } catch (err) {
             // 记录错误日志
@@ -1463,7 +1541,8 @@ export default {
                 url: url.pathname,
                 method: request.method,
                 user: envUKey || 'unknown',
-                workerRegion: currentWorkerRegion || 'unknown'
+                workerRegion: currentWorkerRegion || 'unknown',
+                statusCode: 500
             });
             
             return new Response(err.toString(), { status: 500 });
@@ -1485,6 +1564,12 @@ async function handleSubscriptionRequest(request, user, url = null) {
 
     // 验证密钥：user必须与环境变量u完全匹配（支持大小写）
     if (!envUKey || user !== envUKey) {
+        logHTTPError(403, '密钥验证失败，订阅链接需要使用正确的密钥u', 'handleSubscriptionRequest', {
+            url: url.pathname,
+            method: request.method,
+            user: user || 'unknown',
+            workerRegion: currentWorkerRegion || 'unknown'
+        });
         return new Response(JSON.stringify({
             error: '访问被拒绝',
             message: '密钥验证失败，订阅链接需要使用正确的密钥u'
@@ -1520,8 +1605,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
         } catch (error) {
             logError(error, 'handleSubscriptionRequest.addNodesFromList', {
                 url: url.pathname,
+                method: request.method,
                 user: user,
-                workerRegion: currentWorkerRegion || 'unknown'
+                workerRegion: currentWorkerRegion || 'unknown',
+                statusCode: 500
             });
             if (!currentWorkerRegion) {
                 currentWorkerRegion = await detectWorkerRegion(request);
@@ -1881,6 +1968,11 @@ async function handleImageProxy(request) {
     const code = url.searchParams.get('code');
 
     if (!code) {
+        logHTTPError(400, 'Missing code', 'handleImageProxy', {
+            url: url.pathname,
+            method: request.method,
+            workerRegion: currentWorkerRegion || 'unknown'
+        });
         return new Response('Missing code', { status: 400 });
     }
 
@@ -1894,6 +1986,11 @@ async function handleImageProxy(request) {
         });
 
         if (!response.ok) {
+            logHTTPError(500, 'Failed to fetch', 'handleImageProxy', {
+                url: url.pathname,
+                method: request.method,
+                workerRegion: currentWorkerRegion || 'unknown'
+            });
             return new Response('Failed to fetch', { status: 500 });
         }
 
@@ -1901,6 +1998,11 @@ async function handleImageProxy(request) {
         const imgMatch = html.match(/<a[^>]+class="bigImage"[^>]*><img[^>]+src="([^"]+)"/);
 
         if (!imgMatch) {
+            logHTTPError(404, 'Image not found', 'handleImageProxy', {
+                url: url.pathname,
+                method: request.method,
+                workerRegion: currentWorkerRegion || 'unknown'
+            });
             return new Response('Image not found', { status: 404 });
         }
 
@@ -1918,6 +2020,11 @@ async function handleImageProxy(request) {
         });
 
         if (!imageResponse.ok) {
+            logHTTPError(500, 'Image fetch failed', 'handleImageProxy', {
+                url: url.pathname,
+                method: request.method,
+                workerRegion: currentWorkerRegion || 'unknown'
+            });
             return new Response('Image fetch failed', { status: 500 });
         }
 
@@ -1930,6 +2037,11 @@ async function handleImageProxy(request) {
             }
         });
     } catch (error) {
+        logError(error, 'handleImageProxy', {
+            url: url.pathname,
+            method: request.method,
+            workerRegion: currentWorkerRegion || 'unknown'
+        });
         return new Response('Error: ' + error.message, { status: 500 });
     }
 }
@@ -2130,7 +2242,8 @@ async function handleWsRequest(request) {
         logError(error, 'handleWsRequest', {
             url: request.url,
             method: request.method,
-            workerRegion: currentWorkerRegion || 'unknown'
+            workerRegion: currentWorkerRegion || 'unknown',
+            statusCode: 500
         });
         // 如果WebSocket创建失败，返回错误响应
         return new Response(`WebSocket error: ${error.message}`, { status: 500 });
