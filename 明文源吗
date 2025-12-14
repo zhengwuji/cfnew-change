@@ -3652,18 +3652,18 @@ async function handleSubscriptionPage(request, user = null) {
                     
                     // 格式化日志为文本
                     const logText = logs.map(log => {
-                        let text = \`[${log.timestamp}] [${log.context}] ${log.message}\`;
+                        let text = '[' + log.timestamp + '] [' + log.context + '] ' + log.message;
                         if (log.stack) {
-                            text += \`\\n堆栈:\\n${log.stack}\`;
+                            text += '\\n堆栈:\\n' + log.stack;
                         }
                         if (log.url) {
-                            text += \`\\nURL: ${log.url}\`;
+                            text += '\\nURL: ' + log.url;
                         }
                         if (log.method) {
-                            text += \`\\n方法: ${log.method}\`;
+                            text += '\\n方法: ' + log.method;
                         }
                         if (log.workerRegion) {
-                            text += \`\\n地区: ${log.workerRegion}\`;
+                            text += '\\n地区: ' + log.workerRegion;
                         }
                         return text;
                     }).join('\\n\\n' + '='.repeat(80) + '\\n\\n');
@@ -6389,26 +6389,34 @@ async function handleErrorLogsPage(request, url) {
             }
             container.innerHTML = filteredLogs.map((log, index) => {
                 const isError = log.type !== 'String';
-                return \`<div class="log-entry \${isError ? 'error' : ''}">
-                    <div class="log-header">
-                        <div><span class="log-timestamp">\${new Date(log.timestamp).toLocaleString('zh-CN')}</span>
-                        <span class="log-context">\${log.context}</span></div>
-                    </div>
-                    <div class="log-message"><strong>\${log.message}</strong></div>
-                    \${log.stack ? '<div class="log-stack">' + log.stack + '</div>' : ''}
-                    <div class="log-meta">
-                        \${log.url ? '<span>📍 ' + log.url + '</span>' : ''}
-                        \${log.method ? '<span>🔧 ' + log.method + '</span>' : ''}
-                        \${log.workerRegion ? '<span>🌍 ' + log.workerRegion + '</span>' : ''}
-                        \${log.type ? '<span>📦 ' + log.type + '</span>' : ''}
-                    </div>
-                    <button class="copy-btn" onclick="copyLog(\${index})">📋 复制此日志</button>
-                </div>\`;
+                const errorClass = isError ? 'error' : '';
+                const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+                const stackHtml = log.stack ? '<div class="log-stack">' + log.stack + '</div>' : '';
+                const urlHtml = log.url ? '<span>📍 ' + log.url + '</span>' : '';
+                const methodHtml = log.method ? '<span>🔧 ' + log.method + '</span>' : '';
+                const regionHtml = log.workerRegion ? '<span>🌍 ' + log.workerRegion + '</span>' : '';
+                const typeHtml = log.type ? '<span>📦 ' + log.type + '</span>' : '';
+                return '<div class="log-entry ' + errorClass + '">' +
+                    '<div class="log-header">' +
+                    '<div><span class="log-timestamp">' + timestamp + '</span>' +
+                    '<span class="log-context">' + log.context + '</span></div>' +
+                    '</div>' +
+                    '<div class="log-message"><strong>' + log.message + '</strong></div>' +
+                    stackHtml +
+                    '<div class="log-meta">' +
+                    urlHtml + methodHtml + regionHtml + typeHtml +
+                    '</div>' +
+                    '<button class="copy-btn" onclick="copyLog(' + index + ')">📋 复制此日志</button>' +
+                    '</div>';
             }).join('');
         }
         function copyLog(index) {
             const log = allLogs[index];
-            const logText = \`时间: \${log.timestamp}\\n上下文: \${log.context}\\n消息: \${log.message}\\n\${log.stack ? '堆栈: ' + log.stack + '\\n' : ''}\${log.url ? 'URL: ' + log.url + '\\n' : ''}\${log.method ? '方法: ' + log.method + '\\n' : ''}\${log.workerRegion ? '地区: ' + log.workerRegion + '\\n' : ''}\`;
+            let logText = '时间: ' + log.timestamp + '\\n上下文: ' + log.context + '\\n消息: ' + log.message + '\\n';
+            if (log.stack) logText += '堆栈: ' + log.stack + '\\n';
+            if (log.url) logText += 'URL: ' + log.url + '\\n';
+            if (log.method) logText += '方法: ' + log.method + '\\n';
+            if (log.workerRegion) logText += '地区: ' + log.workerRegion + '\\n';
             navigator.clipboard.writeText(logText).then(() => { alert('日志已复制到剪贴板'); });
         }
         async function exportLogs() {
@@ -6422,9 +6430,11 @@ async function handleErrorLogsPage(request, url) {
             URL.revokeObjectURL(url);
         }
         async function copyAllLogs() {
-            const logText = allLogs.map(log => 
-                \`[\${log.timestamp}] [\${log.context}] \${log.message}\${log.stack ? '\\n' + log.stack : ''}\`
-            ).join('\\n\\n');
+            const logText = allLogs.map(log => {
+                let text = '[' + log.timestamp + '] [' + log.context + '] ' + log.message;
+                if (log.stack) text += '\\n' + log.stack;
+                return text;
+            }).join('\\n\\n');
             navigator.clipboard.writeText(logText).then(() => { alert('所有日志已复制到剪贴板'); });
         }
         async function clearLogs() {
