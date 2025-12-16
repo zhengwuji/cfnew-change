@@ -2938,6 +2938,15 @@ async function handleSubscriptionPage(request, user = null) {
                 border-color: #22c55e !important;
                 box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
             }
+            /* 已确认区域的蓝色高亮样式 */
+            select option.confirmed-region {
+                background: #3b82f6 !important;
+                color: #ffffff !important;
+                font-weight: 600 !important;
+            }
+            select option.confirmed-region:hover {
+                background: #2563eb !important;
+            }
         </style>
     </head>
     <body>
@@ -3127,9 +3136,9 @@ async function handleSubscriptionPage(request, user = null) {
                                 <div style="margin-top: 10px;">
                                     <button type="button" id="confirmRegionSelection" style="width: 100%; background: #22c55e; border: none; padding: 10px 20px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);">✅ 确认选择</button>
                                 </div>
-                                <div id="confirmedRegionsDisplay" style="margin-top: 12px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; display: none;">
+                                <div id="confirmedRegionsDisplay" style="margin-top: 12px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
                                     <div style="font-weight: 600; color: #15803d; font-size: 0.875rem; margin-bottom: 8px;">✅ 已确认的区域：</div>
-                                    <div id="confirmedRegionsList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                                    <div id="confirmedRegionsList" style="display: flex; flex-wrap: wrap; gap: 6px;"><span style="color: #666; font-size: 0.8125rem;">请先选择区域并点击"确认选择"按钮</span></div>
                                 </div>
                         </div>
                         
@@ -4473,7 +4482,7 @@ async function handleSubscriptionPage(request, user = null) {
                     });
                 }
                 
-                // 确认选择功能
+                // 确认选择功能 - 带持久化存储
                 const confirmRegionBtn = document.getElementById('confirmRegionSelection');
                 const confirmedDisplay = document.getElementById('confirmedRegionsDisplay');
                 const confirmedList = document.getElementById('confirmedRegionsList');
@@ -4491,13 +4500,28 @@ async function handleSubscriptionPage(request, user = null) {
                     'DigitalOcean': '🌊 数码海', 'Vultr': '⚡ Vultr'
                 };
                 
+                // 应用蓝色高亮到下拉框选项
+                function applyBlueHighlight() {
+                    if (!proxyRegionSelect) return;
+                    
+                    const options = proxyRegionSelect.options;
+                    for (let i = 0; i < options.length; i++) {
+                        const option = options[i];
+                        if (confirmedRegions.includes(option.value)) {
+                            option.classList.add('confirmed-region');
+                        } else {
+                            option.classList.remove('confirmed-region');
+                        }
+                    }
+                }
+                
+                // 更新已确认区域显示
                 function updateConfirmedDisplay() {
                     if (confirmedRegions.length === 0) {
-                        confirmedDisplay.style.display = 'none';
+                        confirmedList.innerHTML = '<span style="color: #666; font-size: 0.8125rem;">请先选择区域并点击\"确认选择\"按钮</span>';
                         return;
                     }
                     
-                    confirmedDisplay.style.display = 'block';
                     confirmedList.innerHTML = '';
                     
                     confirmedRegions.forEach(region => {
@@ -4524,7 +4548,10 @@ async function handleSubscriptionPage(request, user = null) {
                         removeBtn.onclick = function(e) {
                             e.stopPropagation();
                             confirmedRegions = confirmedRegions.filter(r => r !== region);
+                            // 保存到 localStorage
+                            localStorage.setItem('confirmedProxyRegions', JSON.stringify(confirmedRegions));
                             updateConfirmedDisplay();
+                            applyBlueHighlight();
                             showStatus('已移除 ' + regionNames[region], 'info');
                         };
                         tag.appendChild(removeBtn);
@@ -4533,6 +4560,21 @@ async function handleSubscriptionPage(request, user = null) {
                     });
                 }
                 
+                // 页面加载时恢复已确认的区域
+                function loadConfirmedRegions() {
+                    try {
+                        const saved = localStorage.getItem('confirmedProxyRegions');
+                        if (saved) {
+                            confirmedRegions = JSON.parse(saved);
+                            updateConfirmedDisplay();
+                            applyBlueHighlight();
+                        }
+                    } catch (error) {
+                        console.error('加载已确认区域失败:', error);
+                    }
+                }
+                
+                // 确认选择按钮点击事件
                 if (confirmRegionBtn) {
                     confirmRegionBtn.addEventListener('click', function() {
                         const selectedOptions = Array.from(proxyRegionSelect.selectedOptions);
@@ -4543,7 +4585,12 @@ async function handleSubscriptionPage(request, user = null) {
                             return;
                         }
                         
+                        // 保存到 localStorage
+                        localStorage.setItem('confirmedProxyRegions', JSON.stringify(confirmedRegions));
+                        
+                        // 更新显示和高亮
                         updateConfirmedDisplay();
+                        applyBlueHighlight();
                         showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域', 'success');
                         
                         // 添加按钮点击动画
@@ -4553,6 +4600,10 @@ async function handleSubscriptionPage(request, user = null) {
                         }, 100);
                     });
                 }
+                
+                // 页面加载时立即恢复
+                loadConfirmedRegions();
+
 
 
                 
