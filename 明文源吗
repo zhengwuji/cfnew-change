@@ -637,7 +637,7 @@ export default {
 
             cp = getConfigValue('d', env.d || env.D) || '';
 
-            // 处理 p 参数：如果是 URL/GitHub 仓库地址，则合并到 piu 中
+            // 处理 p 参数：如果是 URL/GitHub 仓库地址，需要判断是否为普通代理列表
             const envFallback = getConfigValue('p', env.p || env.P);
             if (envFallback) {
                 const rawP = envFallback.trim();
@@ -645,18 +645,33 @@ export default {
                 const isURLSource = lowerP.startsWith('http://') || lowerP.startsWith('https://') || lowerP.includes('github.com/');
 
                 if (isURLSource) {
-                    const expanded = expandProxySourceList(rawP);
-                    if (expanded) {
-                        const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
-                        if (!piu || piu === defaultURL) {
-                            piu = expanded;
-                        } else {
-                            piu = piu + ',' + expanded;
+                    // 检查是否为普通代理列表（如 TheSpeedX/PROXY-List）
+                    const isNormalProxyList = lowerP.includes('thespeedx/proxy-list') || 
+                                             lowerP.includes('iplocate/free-proxy-list') ||
+                                             lowerP.includes('socks') ||
+                                             lowerP.includes('http.txt');
+                    
+                    if (isNormalProxyList) {
+                        // 普通代理列表不应该用来生成节点，应该用作 fallback 地址
+                        // 这里不展开到 piu，而是保持为空，让 fallbackAddress 在后续逻辑中处理
+                        // 注意：普通代理列表不支持直接用作 VLESS/Trojan fallback，所以这里设置为空
+                        fallbackAddress = '';
+                        fallbackPort = '443';
+                        // 不合并到 piu，避免生成错误的节点链接
+                    } else {
+                        // 其他 URL（可能是 Cloudflare IP 列表），展开并合并到 piu
+                        const expanded = expandProxySourceList(rawP);
+                        if (expanded) {
+                            const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+                            if (!piu || piu === defaultURL) {
+                                piu = expanded;
+                            } else {
+                                piu = piu + ',' + expanded;
+                            }
                         }
+                        fallbackAddress = '';
+                        fallbackPort = '443';
                     }
-                    // URL 模式下，不设置 fallbackAddress
-                    fallbackAddress = '';
-                    fallbackPort = '443';
                 } else {
                     // 兼容原有自定义单一 ProxyIP 行为
                     const fallbackValue = rawP.toLowerCase();
@@ -1722,10 +1737,21 @@ async function handleSubscriptionRequest(request, user, url = null) {
             }
         }
 
-        // 当 egi 启用，或者 piu 不是默认 URL（说明配置了自定义代理列表来源）时，获取代理列表
+        // 当 egi 启用时，获取代理列表（仅用于默认的 Cloudflare IP 列表）
         const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
         const hasCustomProxySource = piu && piu !== defaultURL;
-        if (egi || hasCustomProxySource) {
+        
+        // 检查 piu 是否包含 TheSpeedX/PROXY-List 或其他普通代理列表
+        const isNormalProxyList = hasCustomProxySource && (
+            piu.toLowerCase().includes('thespeedx/proxy-list') ||
+            piu.toLowerCase().includes('iplocate/free-proxy-list') ||
+            piu.toLowerCase().includes('socks') ||
+            piu.toLowerCase().includes('http.txt')
+        );
+        
+        // 只有当 egi 启用且不是普通代理列表时，才生成节点链接
+        // 普通代理列表（如 TheSpeedX/PROXY-List）应该用作 fallback 地址，而不是生成节点
+        if (egi && !isNormalProxyList) {
             try {
                 const newIPList = await fetchAndParseNewIPs();
                 if (newIPList.length > 0) {
@@ -1751,6 +1777,9 @@ async function handleSubscriptionRequest(request, user, url = null) {
                 }
             }
         }
+        
+        // 如果配置了普通代理列表作为 p 参数，应该用作 fallback 地址而不是生成节点
+        // 这部分逻辑在 prepareEnvironmentForCron 中已经处理，将 p 设置为 fallbackAddress
     }
 
     if (finalLinks.length === 0) {
