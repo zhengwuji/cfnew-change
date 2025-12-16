@@ -515,20 +515,7 @@ export default {
                 enableRegionMatching = false;
             }
 
-            const envFallback = getConfigValue('p', env.p || env.P);
-            if (envFallback) {
-                const fallbackValue = envFallback.toLowerCase();
-                if (fallbackValue.includes(']:')) {
-                    const lastColonIndex = fallbackValue.lastIndexOf(':');
-                    fallbackPort = fallbackValue.slice(lastColonIndex + 1);
-                    fallbackAddress = fallbackValue.slice(0, lastColonIndex);
-                } else if (!fallbackValue.includes(']:') && !fallbackValue.includes(']')) {
-                    [fallbackAddress, fallbackPort = '443'] = fallbackValue.split(':');
-                } else {
-                    fallbackAddress = fallbackValue;
-                    fallbackPort = '443';
-                }
-            }
+            // p 参数处理已在 piu 设置后统一处理，此处移除重复逻辑
 
             socks5Config = getConfigValue('s', env.s || env.S) || socks5Config;
             if (socks5Config) {
@@ -649,6 +636,42 @@ export default {
             piu = getConfigValue('yxURL', env.yxURL || env.YXURL) || 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
 
             cp = getConfigValue('d', env.d || env.D) || '';
+
+            // 处理 p 参数：如果是 URL/GitHub 仓库地址，则合并到 piu 中
+            const envFallback = getConfigValue('p', env.p || env.P);
+            if (envFallback) {
+                const rawP = envFallback.trim();
+                const lowerP = rawP.toLowerCase();
+                const isURLSource = lowerP.startsWith('http://') || lowerP.startsWith('https://') || lowerP.includes('github.com/');
+
+                if (isURLSource) {
+                    const expanded = expandProxySourceList(rawP);
+                    if (expanded) {
+                        const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+                        if (!piu || piu === defaultURL) {
+                            piu = expanded;
+                        } else {
+                            piu = piu + ',' + expanded;
+                        }
+                    }
+                    // URL 模式下，不设置 fallbackAddress
+                    fallbackAddress = '';
+                    fallbackPort = '443';
+                } else {
+                    // 兼容原有自定义单一 ProxyIP 行为
+                    const fallbackValue = rawP.toLowerCase();
+                    if (fallbackValue.includes(']:')) {
+                        const lastColonIndex = fallbackValue.lastIndexOf(':');
+                        fallbackPort = fallbackValue.slice(lastColonIndex + 1);
+                        fallbackAddress = fallbackValue.slice(0, lastColonIndex);
+                    } else if (!fallbackValue.includes(']:') && !fallbackValue.includes(']')) {
+                        [fallbackAddress, fallbackPort = '443'] = fallbackValue.split(':');
+                    } else {
+                        fallbackAddress = fallbackValue;
+                        fallbackPort = '443';
+                    }
+                }
+            }
 
             const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
             if (piu !== defaultURL) {
@@ -2961,8 +2984,8 @@ async function handleSubscriptionPage(request, user = null) {
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.customIP}</label>
-                                <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
-                                <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 6px;">自定义ProxyIP地址和端口</small>
+                                <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443 或 https://github.com/TheSpeedX/PROXY-List" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
+                                <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 6px;">支持单个IP:端口，或GitHub代理列表地址（多个用逗号分隔）。例如: https://github.com/TheSpeedX/PROXY-List,https://github.com/iplocate/free-proxy-list</small>
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.preferredIPs}</label>
@@ -5309,6 +5332,43 @@ async function fetchAndParseNewIPs() {
     }
 }
 
+// 将 GitHub 仓库地址等，展开为实际可用的代理列表 URL（支持多个，用逗号分隔）
+function expandProxySourceList(rawValue) {
+    if (!rawValue) return '';
+    const sources = [];
+    const items = rawValue.split(',').map(x => x.trim()).filter(Boolean);
+
+    items.forEach(item => {
+        const lower = item.toLowerCase();
+
+        // 只处理 URL 类型，其它留给原有 p 逻辑处理
+        if (!lower.startsWith('http://') && !lower.startsWith('https://') && !lower.includes('github.com/')) {
+            return;
+        }
+
+        // TheSpeedX/PROXY-List 仓库根地址，自动展开到 http / socks4 / socks5 列表
+        if (lower.includes('github.com/thespeedx/proxy-list')) {
+            sources.push(
+                'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
+                'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt',
+                'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt'
+            );
+            return;
+        }
+
+        // iplocate/free-proxy-list 仓库根地址，使用官方聚合列表
+        if (lower.includes('github.com/iplocate/free-proxy-list')) {
+            sources.push('https://raw.githubusercontent.com/iplocate/free-proxy-list/main/all-proxies.txt');
+            return;
+        }
+
+        // 其它情况保留为原始 URL（可以是任意文本/CSV 代理列表）
+        sources.push(item);
+    });
+
+    return sources.join(',');
+}
+
 function generateLinksFromNewIPs(list, user, workerDomain) {
 
     const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
@@ -5806,16 +5866,39 @@ function updateConfigVariables() {
 
     const envFallback = getConfigValue('p', '');
     if (envFallback) {
-        const fallbackValue = envFallback.toLowerCase();
-        if (fallbackValue.includes(']:')) {
-            const lastColonIndex = fallbackValue.lastIndexOf(':');
-            fallbackPort = fallbackValue.slice(lastColonIndex + 1);
-            fallbackAddress = fallbackValue.slice(0, lastColonIndex);
-        } else if (!fallbackValue.includes(']:') && !fallbackValue.includes(']')) {
-            [fallbackAddress, fallbackPort = '443'] = fallbackValue.split(':');
-        } else {
-            fallbackAddress = fallbackValue;
+        const rawP = envFallback.trim();
+        const lowerP = rawP.toLowerCase();
+        const isURLSource = lowerP.startsWith('http://') || lowerP.startsWith('https://') || lowerP.includes('github.com/');
+
+        if (isURLSource) {
+            // 当 p 配置为 URL / GitHub 仓库地址时，视为“自定义 Proxy 列表来源”
+            // 不再把它当成单一回退 IP，而是并入优选 IP 列表来源（piu），支持多个地址
+            const expanded = expandProxySourceList(rawP);
+            if (expanded) {
+                const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+                if (!piu || piu === defaultURL) {
+                    piu = expanded;
+                } else {
+                    piu = piu + ',' + expanded;
+                }
+            }
+
+            // URL 模式下，不强制设置 fallbackAddress，保持为默认（由备份节点逻辑接管）
+            fallbackAddress = '';
             fallbackPort = '443';
+        } else {
+            // 兼容原有自定义单一 ProxyIP 行为：p=ip:port / [ipv6]:port / 域名[:port]
+            const value = rawP;
+            if (value.includes(']:')) {
+                const lastColonIndex = value.lastIndexOf(':');
+                fallbackPort = value.slice(lastColonIndex + 1);
+                fallbackAddress = value.slice(0, lastColonIndex);
+            } else if (!value.includes(']:') && !value.includes(']')) {
+                [fallbackAddress, fallbackPort = '443'] = value.split(':');
+            } else {
+                fallbackAddress = value;
+                fallbackPort = '443';
+            }
         }
     } else {
         fallbackAddress = '';
