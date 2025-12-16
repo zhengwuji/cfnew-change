@@ -38,15 +38,25 @@ let kvStore = null;
 let kvConfig = {};
 
 const regionMapping = {
+    'GLOBAL': ['🌐 全球', 'GLOBAL', 'Global'],
     'US': ['🇺🇸 美国', 'US', 'United States'],
+    'CA': ['🇨🇦 加拿大', 'CA', 'Canada'],
     'SG': ['🇸🇬 新加坡', 'SG', 'Singapore'],
     'JP': ['🇯🇵 日本', 'JP', 'Japan'],
     'KR': ['🇰🇷 韩国', 'KR', 'South Korea'],
+    'HK': ['🇭🇰 香港', 'HK', 'Hong Kong'],
+    'IN': ['🇮🇳 印度', 'IN', 'India'],
     'DE': ['🇩🇪 德国', 'DE', 'Germany'],
     'SE': ['🇸🇪 瑞典', 'SE', 'Sweden'],
     'NL': ['🇳🇱 荷兰', 'NL', 'Netherlands'],
     'FI': ['🇫🇮 芬兰', 'FI', 'Finland'],
     'GB': ['🇬🇧 英国', 'GB', 'United Kingdom'],
+    'FR': ['🇫🇷 法国', 'FR', 'France'],
+    'PL': ['🇵🇱 波兰', 'PL', 'Poland'],
+    'RU': ['🇷🇺 俄罗斯', 'RU', 'Russia'],
+    'CH': ['🇨🇭 瑞士', 'CH', 'Switzerland'],
+    'LV': ['🇱🇻 拉脱维亚', 'LV', 'Latvia'],
+    'Aliyun': ['☁️ 阿里云', 'Aliyun', 'Alibaba Cloud'],
     'Oracle': ['甲骨文', 'Oracle'],
     'DigitalOcean': ['数码海', 'DigitalOcean'],
     'Vultr': ['Vultr', 'Vultr'],
@@ -54,15 +64,42 @@ const regionMapping = {
 };
 
 let backupIPs = [
-    { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
+    // 全球 - CMLiussss.net
+    { domain: 'ProxyIP.CMLiussss.net', region: 'GLOBAL', regionCode: 'GLOBAL', port: 443 },
+    
+    // 亚洲 - CMLiussss.net
+    { domain: 'ProxyIP.HK.CMLiussss.net', region: 'HK', regionCode: 'HK', port: 443 },
     { domain: 'ProxyIP.SG.CMLiussss.net', region: 'SG', regionCode: 'SG', port: 443 },
     { domain: 'ProxyIP.JP.CMLiussss.net', region: 'JP', regionCode: 'JP', port: 443 },
     { domain: 'ProxyIP.KR.CMLiussss.net', region: 'KR', regionCode: 'KR', port: 443 },
-    { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
-    { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
-    { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
-    { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
+    { domain: 'ProxyIP.IN.CMLiussss.net', region: 'IN', regionCode: 'IN', port: 443 },
+    
+    // 欧洲 - CMLiussss.net
     { domain: 'ProxyIP.GB.CMLiussss.net', region: 'GB', regionCode: 'GB', port: 443 },
+    { domain: 'ProxyIP.FR.CMLiussss.net', region: 'FR', regionCode: 'FR', port: 443 },
+    { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
+    { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
+    { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
+    { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
+    { domain: 'ProxyIP.PL.CMLiussss.net', region: 'PL', regionCode: 'PL', port: 443 },
+    { domain: 'ProxyIP.RU.CMLiussss.net', region: 'RU', regionCode: 'RU', port: 443 },
+    { domain: 'ProxyIP.CH.CMLiussss.net', region: 'CH', regionCode: 'CH', port: 443 },
+    { domain: 'ProxyIP.LV.CMLiussss.net', region: 'LV', regionCode: 'LV', port: 443 },
+    
+    // 北美 - CMLiussss.net
+    { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
+    { domain: 'ProxyIP.CA.CMLiussss.net', region: 'CA', regionCode: 'CA', port: 443 },
+    
+    // fxxk.dedyn.io 系列 - 高频维护
+    { domain: 'proxyip.fxxk.dedyn.io', region: 'US', regionCode: 'US', port: 443, updateFreq: '12h' },
+    { domain: 'proxyip.sg.fxxk.dedyn.io', region: 'SG', regionCode: 'SG', port: 443, updateFreq: '12h' },
+    { domain: 'proxyip.jp.fxxk.dedyn.io', region: 'JP', regionCode: 'JP', port: 443, updateFreq: '12h' },
+    { domain: 'proxyip.hk.fxxk.dedyn.io', region: 'HK', regionCode: 'HK', port: 443, updateFreq: '12h' },
+    { domain: 'proxyip.aliyun.fxxk.dedyn.io', region: 'Aliyun', regionCode: 'Aliyun', port: 443, updateFreq: '4h' },
+    { domain: 'proxyip.oracle.fxxk.dedyn.io', region: 'Oracle', regionCode: 'Oracle', port: 443, updateFreq: '4h' },
+    { domain: 'proxyip.digitalocean.fxxk.dedyn.io', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443, updateFreq: '4h' },
+    
+    // 云服务商 - CMLiussss.net
     { domain: 'ProxyIP.Oracle.cmliussss.net', region: 'Oracle', regionCode: 'Oracle', port: 443 },
     { domain: 'ProxyIP.DigitalOcean.CMLiussss.net', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443 },
     { domain: 'ProxyIP.Vultr.CMLiussss.net', region: 'Vultr', regionCode: 'Vultr', port: 443 },
@@ -409,15 +446,28 @@ async function getBestBackupIP(workerRegion = '') {
 
 function getNearbyRegions(region) {
     const nearbyMap = {
-        'US': ['SG', 'JP', 'KR'],
-        'SG': ['JP', 'KR', 'US'],
-        'JP': ['SG', 'KR', 'US'],
-        'KR': ['JP', 'SG', 'US'],
-        'DE': ['NL', 'GB', 'SE', 'FI'],
-        'SE': ['DE', 'NL', 'FI', 'GB'],
-        'NL': ['DE', 'GB', 'SE', 'FI'],
-        'FI': ['SE', 'DE', 'NL', 'GB'],
-        'GB': ['DE', 'NL', 'SE', 'FI']
+        // 亚洲地区
+        'HK': ['SG', 'JP', 'KR', 'US'],
+        'SG': ['HK', 'JP', 'KR', 'US'],
+        'JP': ['KR', 'SG', 'HK', 'US'],
+        'KR': ['JP', 'SG', 'HK', 'US'],
+        'IN': ['SG', 'HK', 'JP', 'DE'],
+        
+        // 北美地区
+        'US': ['CA', 'SG', 'JP', 'GB'],
+        'CA': ['US', 'GB', 'FR', 'DE'],
+        
+        // 欧洲地区
+        'GB': ['FR', 'NL', 'DE', 'IE'],
+        'FR': ['GB', 'DE', 'CH', 'NL'],
+        'DE': ['NL', 'FR', 'CH', 'SE'],
+        'NL': ['GB', 'DE', 'BE', 'FR'],
+        'SE': ['FI', 'DE', 'NL', 'GB'],
+        'FI': ['SE', 'DE', 'RU', 'NL'],
+        'PL': ['DE', 'SE', 'FI', 'RU'],
+        'RU': ['FI', 'SE', 'PL', 'DE'],
+        'CH': ['DE', 'FR', 'IT', 'AT'],
+        'LV': ['FI', 'SE', 'PL', 'RU']
     };
 
     return nearbyMap[region] || [];
@@ -425,7 +475,12 @@ function getNearbyRegions(region) {
 
 function getAllRegionsByPriority(region) {
     const nearbyRegions = getNearbyRegions(region);
-    const allRegions = ['US', 'SG', 'JP', 'KR', 'DE', 'SE', 'NL', 'FI', 'GB'];
+    const allRegions = [
+        'GLOBAL',  // 全球优先
+        'HK', 'SG', 'JP', 'KR', 'IN',  // 亚洲
+        'US', 'CA',  // 北美
+        'GB', 'FR', 'DE', 'NL', 'SE', 'FI', 'PL', 'RU', 'CH', 'LV'  // 欧洲
+    ];
 
     return [region, ...nearbyRegions, ...allRegions.filter(r => r !== region && !nearbyRegions.includes(r))];
 }
@@ -3023,6 +3078,54 @@ async function handleSubscriptionPage(request, user = null) {
                                 <small style="color: #666; font-size: 0.8125rem; display: block; margin-bottom: 8px;">支持单个IP:端口，或GitHub代理列表地址。点击"添加"按钮保存到列表。</small>
                                 <div id="customIPList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;"></div>
                         </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">🌍 ProxyIP 区域选择</label>
+                                <select id="proxyRegionSelect" size="8" multiple style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px; min-height: 200px;">
+                                    <optgroup label="🌐 全球覆盖">
+                                        <option value="GLOBAL">🌐 全球优选</option>
+                                    </optgroup>
+                                    <optgroup label="🌏 亚洲地区">
+                                        <option value="HK" selected>🇭🇰 香港</option>
+                                        <option value="SG" selected>🇸🇬 新加坡</option>
+                                        <option value="JP" selected>🇯🇵 日本</option>
+                                        <option value="KR" selected>🇰🇷 韩国</option>
+                                        <option value="IN">🇮🇳 印度</option>
+                                    </optgroup>
+                                    <optgroup label="🌍 欧洲地区">
+                                        <option value="GB">🇬🇧 英国</option>
+                                        <option value="FR">🇫🇷 法国</option>
+                                        <option value="DE" selected>🇩🇪 德国</option>
+                                        <option value="NL">🇳🇱 荷兰</option>
+                                        <option value="SE">🇸🇪 瑞典</option>
+                                        <option value="FI">🇫🇮 芬兰</option>
+                                        <option value="PL">🇵🇱 波兰</option>
+                                        <option value="RU">🇷🇺 俄罗斯</option>
+                                        <option value="CH">🇨🇭 瑞士</option>
+                                        <option value="LV">🇱🇻 拉脱维亚</option>
+                                    </optgroup>
+                                    <optgroup label="🌎 北美地区">
+                                        <option value="US" selected>🇺🇸 美国</option>
+                                        <option value="CA">🇨🇦 加拿大</option>
+                                    </optgroup>
+                                    <optgroup label="☁️ 云服务商">
+                                        <option value="Aliyun">☁️ 阿里云</option>
+                                        <option value="Oracle">🔮 甲骨文</option>
+                                        <option value="DigitalOcean">🌊 数码海</option>
+                                        <option value="Vultr">⚡ Vultr</option>
+                                    </optgroup>
+                                </select>
+                                <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 8px; line-height: 1.5;">
+                                    💡 默认已选中常用区域（香港、新加坡、日本、韩国、德国、美国）。按住 <strong>Ctrl</strong> (Windows) 或 <strong>Cmd</strong> (Mac) 可多选。
+                                    <br>包含 <span style="color: #22c55e; font-weight: 600;">CMLiussss.net</span> (3小时更新) 和 <span style="color: #3b82f6; font-weight: 600;">fxxk.dedyn.io</span> (4-12小时更新) 两个高质量源。
+                                </small>
+                                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                                    <button type="button" id="selectAllRegions" style="flex: 1; background: #3b82f6; border: none; padding: 8px 16px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease;">✓ 全选</button>
+                                    <button type="button" id="deselectAllRegions" style="flex: 1; background: #6b7280; border: none; padding: 8px 16px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease;">✗ 清空</button>
+                                    <button type="button" id="selectAsiaRegions" style="flex: 1; background: #8b5cf6; border: none; padding: 8px 16px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease;">🌏 仅亚洲</button>
+                                </div>
+                        </div>
+                        
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.preferredIPs}</label>
                                 <input type="text" id="yx" placeholder="例如: 1.2.3.4:443#日本节点,5.6.7.8:80#美国节点,example.com:8443#新加坡节点" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
@@ -4325,6 +4428,44 @@ async function handleSubscriptionPage(request, user = null) {
                 const randomCountDiv = document.getElementById('randomCountDiv');
                 const generateCFIPBtn = document.getElementById('generateCFIPBtn');
                 const fetchIPBtn = document.getElementById('fetchIPBtn');
+                
+                // ProxyIP 区域选择功能
+                const proxyRegionSelect = document.getElementById('proxyRegionSelect');
+                const selectAllRegionsBtn = document.getElementById('selectAllRegions');
+                const deselectAllRegionsBtn = document.getElementById('deselectAllRegions');
+                const selectAsiaRegionsBtn = document.getElementById('selectAsiaRegions');
+                
+                if (selectAllRegionsBtn) {
+                    selectAllRegionsBtn.addEventListener('click', function() {
+                        const options = proxyRegionSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            options[i].selected = true;
+                        }
+                        showStatus('✓ 已选中所有区域', 'success');
+                    });
+                }
+                
+                if (deselectAllRegionsBtn) {
+                    deselectAllRegionsBtn.addEventListener('click', function() {
+                        const options = proxyRegionSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            options[i].selected = false;
+                        }
+                        showStatus('✗ 已清空所有选择', 'info');
+                    });
+                }
+                
+                if (selectAsiaRegionsBtn) {
+                    selectAsiaRegionsBtn.addEventListener('click', function() {
+                        const asiaRegions = ['HK', 'SG', 'JP', 'KR', 'IN'];
+                        const options = proxyRegionSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            options[i].selected = asiaRegions.includes(options[i].value);
+                        }
+                        showStatus('🌏 已选中亚洲区域', 'success');
+                    });
+                }
+
                 
                 if (latencyTestInput) {
                     const savedTestInput = localStorage.getItem('latencyTestInput');
