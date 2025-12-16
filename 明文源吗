@@ -5448,7 +5448,10 @@ function expandProxySourceList(rawValue) {
         }
 
         // TheSpeedX/PROXY-List 仓库根地址，自动展开到 http / socks4 / socks5 列表
+        // 支持多种格式：https://github.com/TheSpeedX/PROXY-List、http://github.com/TheSpeedX/PROXY-List、github.com/TheSpeedX/PROXY-List 等
         if (lower.includes('github.com/thespeedx/proxy-list')) {
+            // 移除可能的锚点、查询参数和末尾斜杠
+            const cleanItem = item.split('#')[0].split('?')[0].replace(/\/$/, '');
             sources.push(
                 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
                 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt',
