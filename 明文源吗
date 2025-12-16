@@ -1722,7 +1722,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
             }
         }
 
-        if (egi) {
+        // 当 egi 启用，或者 piu 不是默认 URL（说明配置了自定义代理列表来源）时，获取代理列表
+        const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+        const hasCustomProxySource = piu && piu !== defaultURL;
+        if (egi || hasCustomProxySource) {
             try {
                 const newIPList = await fetchAndParseNewIPs();
                 if (newIPList.length > 0) {
@@ -5499,9 +5502,9 @@ function generateLinksFromNewIPs(list, user, workerDomain) {
                 links.push(link);
             }
         } else {
-
+            // 非标准端口也使用 TLS，确保 UUID 使用传入的 user 参数
             const wsNodeName = `${nodeName}-${port}-WS-TLS`;
-            const link = `${proto}://${vlessUUID}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
+            const link = `${proto}://${user}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
             links.push(link);
         }
     });
