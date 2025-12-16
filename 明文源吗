@@ -425,37 +425,63 @@ async function checkIPAvailability(domain, port = 443, timeout = 2000) {
 }
 
 async function getBestBackupIP(workerRegion = '') {
+    console.log('=== getBestBackupIP 开始 ===');
+    console.log('Worker Region:', workerRegion);
 
     if (backupIPs.length === 0) {
+        console.log('错误: backupIPs 数组为空');
         return null;
     }
 
+    console.log('总共可用 ProxyIP 数量:', backupIPs.length);
+    console.log('所有 backupIPs:', backupIPs.map(ip => `${ip.regionCode}-${ip.domain}`));
+
     // 获取用户确认的区域列表
     const selectedRegions = getConfigValue('selectedProxyRegions', '');
+    console.log('从 KV 读取的 selectedProxyRegions:', selectedRegions);
+    
     let filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
     
     // 如果用户选择了特定区域，只使用这些区域的 ProxyIP
     if (selectedRegions && selectedRegions.trim()) {
         const regionList = selectedRegions.split(',').map(r => r.trim()).filter(r => r);
+        console.log('解析后的区域列表:', regionList);
+        
         if (regionList.length > 0) {
-            filteredIPs = filteredIPs.filter(ip => regionList.includes(ip.regionCode));
+            console.log('开始过滤 ProxyIP...');
+            filteredIPs = filteredIPs.filter(ip => {
+                const matched = regionList.includes(ip.regionCode);
+                console.log(`  - ${ip.regionCode} (${ip.domain}): ${matched ? '✓ 匹配' : '✗ 不匹配'}`);
+                return matched;
+            });
+            
+            console.log('过滤后的 ProxyIP 数量:', filteredIPs.length);
+            console.log('过滤后的 ProxyIP:', filteredIPs.map(ip => `${ip.regionCode}-${ip.domain}`));
             
             // 如果过滤后没有可用 IP，回退到使用所有 IP
             if (filteredIPs.length === 0) {
+                console.log('警告: 过滤后没有可用 IP，回退到使用所有 IP');
                 filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
             }
         }
+    } else {
+        console.log('未配置 selectedProxyRegions，使用所有 ProxyIP');
     }
 
     if (enableRegionMatching && workerRegion) {
+        console.log('启用区域匹配，Worker 区域:', workerRegion);
         const sortedIPs = getSmartRegionSelection(workerRegion, filteredIPs);
         if (sortedIPs.length > 0) {
             const selectedIP = sortedIPs[0];
+            console.log('最终选择的 ProxyIP:', selectedIP);
+            console.log('=== getBestBackupIP 结束 ===');
             return selectedIP;
         }
     }
 
     const selectedIP = filteredIPs[0];
+    console.log('最终选择的 ProxyIP:', selectedIP);
+    console.log('=== getBestBackupIP 结束 ===');
     return selectedIP;
 }
 
@@ -4592,36 +4618,50 @@ async function handleSubscriptionPage(request, user = null) {
                 // 确认选择按钮点击事件
                 if (confirmRegionBtn) {
                     confirmRegionBtn.addEventListener('click', async function() {
+                        console.log('=== 确认选择按钮点击 ===');
                         const selectedOptions = Array.from(proxyRegionSelect.selectedOptions);
                         confirmedRegions = selectedOptions.map(opt => opt.value);
+                        console.log('选中的区域:', confirmedRegions);
                         
                         if (confirmedRegions.length === 0) {
                             showStatus('⚠️ 请先选择至少一个区域', 'error');
+                            console.log('错误: 未选择任何区域');
                             return;
                         }
                         
                         // 保存到 localStorage（前端显示用）
                         localStorage.setItem('confirmedProxyRegions', JSON.stringify(confirmedRegions));
+                        console.log('已保存到 localStorage:', confirmedRegions);
                         
                         // 保存到 KV 配置（后端订阅生成用）
                         try {
                             const apiUrl = window.location.pathname + '/api/config';
+                            const configData = {
+                                selectedProxyRegions: confirmedRegions.join(',')
+                            };
+                            console.log('准备保存到 KV 配置:', configData);
+                            console.log('API URL:', apiUrl);
+                            
                             const response = await fetch(apiUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    selectedProxyRegions: confirmedRegions.join(',')
-                                })
+                                body: JSON.stringify(configData)
                             });
+                            
+                            console.log('API 响应状态:', response.status);
+                            const responseText = await response.text();
+                            console.log('API 响应内容:', responseText);
                             
                             if (response.ok) {
                                 showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域并保存配置', 'success');
+                                console.log('✅ 配置保存成功');
                             } else {
-                                showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域（本地）', 'success');
+                                showStatus('⚠️ 已确认 ' + confirmedRegions.length + ' 个区域（配置保存失败: ' + response.status + '）', 'warning');
+                                console.log('❌ 配置保存失败:', response.status, responseText);
                             }
                         } catch (error) {
-                            console.error('保存配置失败:', error);
-                            showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域（本地）', 'success');
+                            console.error('保存配置异常:', error);
+                            showStatus('⚠️ 已确认 ' + confirmedRegions.length + ' 个区域（本地，配置保存异常）', 'warning');
                         }
                         
                         // 更新显示和高亮
@@ -4633,6 +4673,8 @@ async function handleSubscriptionPage(request, user = null) {
                         setTimeout(() => {
                             this.style.transform = 'scale(1)';
                         }, 100);
+                        
+                        console.log('=== 确认选择完成 ===');
                     });
                 }
                 
