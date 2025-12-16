@@ -424,9 +424,10 @@ async function checkIPAvailability(domain, port = 443, timeout = 2000) {
     }
 }
 
-async function getBestBackupIP(workerRegion = '') {
+async function getBestBackupIP(workerRegion = '', config = {}) {
     console.log('=== getBestBackupIP 开始 ===');
     console.log('Worker Region:', workerRegion);
+    console.log('传入的 config:', config);
 
     if (backupIPs.length === 0) {
         console.log('错误: backupIPs 数组为空');
@@ -437,8 +438,8 @@ async function getBestBackupIP(workerRegion = '') {
     console.log('所有 backupIPs:', backupIPs.map(ip => `${ip.regionCode}-${ip.domain}`));
 
     // 获取用户确认的区域列表
-    const selectedRegions = getConfigValue('selectedProxyRegions', '');
-    console.log('从 KV 读取的 selectedProxyRegions:', selectedRegions);
+    const selectedRegions = config.selectedProxyRegions || '';
+    console.log('从config读取的 selectedProxyRegions:', selectedRegions);
     
     let filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
     
@@ -1723,6 +1724,23 @@ function generateV2RayConfig(links) {
 async function handleSubscriptionRequest(request, user, url = null) {
     if (!url) url = new URL(request.url);
 
+    // 读取 KV 配置
+    let config = {};
+    if (env.C) {
+        try {
+            const configJSON = await env.C.get(user);
+            if (configJSON) {
+                config = JSON.parse(configJSON);
+                console.log('=== handleSubscriptionRequest 读取配置 ===');
+                console.log('User:', user);
+                console.log('Config:', config);
+                console.log('selectedProxyRegions:', config.selectedProxyRegions);
+            }
+        } catch (error) {
+            console.error('读取配置失败:', error);
+        }
+    }
+
     // 验证密钥：user必须与环境变量u完全匹配（支持大小写）
     if (!envUKey || user !== envUKey) {
         logHTTPError(403, '密钥验证失败，订阅链接需要使用正确的密钥u', 'handleSubscriptionRequest', {
@@ -1775,7 +1793,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
                 currentWorkerRegion = await detectWorkerRegion(request);
             }
 
-            const bestBackupIP = await getBestBackupIP(currentWorkerRegion);
+            const bestBackupIP = await getBestBackupIP(currentWorkerRegion, config);
             if (bestBackupIP) {
                 fallbackAddress = bestBackupIP.domain;
                 fallbackPort = bestBackupIP.port.toString();
@@ -1863,7 +1881,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
                     currentWorkerRegion = await detectWorkerRegion(request);
                 }
 
-                const bestBackupIP = await getBestBackupIP(currentWorkerRegion);
+                const bestBackupIP = await getBestBackupIP(currentWorkerRegion, config);
                 if (bestBackupIP) {
                     fallbackAddress = bestBackupIP.domain;
                     fallbackPort = bestBackupIP.port.toString();
