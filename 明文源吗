@@ -2984,8 +2984,12 @@ async function handleSubscriptionPage(request, user = null) {
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.customIP}</label>
-                                <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443 或 https://github.com/TheSpeedX/PROXY-List" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
-                                <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 6px;">支持单个IP:端口，或GitHub代理列表地址（多个用逗号分隔）。例如: https://github.com/TheSpeedX/PROXY-List,https://github.com/iplocate/free-proxy-list</small>
+                                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                    <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443 或 https://github.com/TheSpeedX/PROXY-List" style="flex: 1; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
+                                    <button type="button" id="addCustomIPBtn" style="background: #22c55e; border: none; padding: 10px 20px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; white-space: nowrap; transition: all 0.2s ease;">添加</button>
+                                </div>
+                                <small style="color: #666; font-size: 0.8125rem; display: block; margin-bottom: 8px;">支持单个IP:端口，或GitHub代理列表地址。点击"添加"按钮保存到列表。</small>
+                                <div id="customIPList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;"></div>
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.preferredIPs}</label>
@@ -3756,7 +3760,8 @@ async function handleSubscriptionPage(request, user = null) {
                     if (document.getElementById('ispUnicom')) document.getElementById('ispUnicom').checked = config.ispUnicom !== 'no';
                     if (document.getElementById('ispTelecom')) document.getElementById('ispTelecom').checked = config.ispTelecom !== 'no';
                     document.getElementById('customPath').value = config.d || '';
-                    document.getElementById('customIP').value = config.p || '';
+                    // 加载自定义ProxyIP列表
+                    loadCustomIPListFromConfig(config.p || '');
                     document.getElementById('yx').value = config.yx || '';
                     document.getElementById('yxURL').value = config.yxURL || '';
                     document.getElementById('socksConfig').value = config.s || '';
@@ -3806,7 +3811,8 @@ async function handleSubscriptionPage(request, user = null) {
                 const wkRegionHint = document.getElementById('wkRegionHint');
                 
                 if (customIPInput && wkRegion) {
-                    const hasCustomIP = customIPInput.value.trim() !== '';
+                    // 检查列表是否有条目或输入框是否有值
+                    const hasCustomIP = customIPList.length > 0 || customIPInput.value.trim() !== '';
                     wkRegion.disabled = hasCustomIP;
                     
                     // 添加视觉反馈
@@ -4082,14 +4088,106 @@ async function handleSubscriptionPage(request, user = null) {
                 }
             }
             
+            // 自定义ProxyIP列表管理
+            let customIPList = [];
+
+            function renderCustomIPList() {
+                const container = document.getElementById('customIPList');
+                if (!container) return;
+
+                container.innerHTML = '';
+                if (customIPList.length === 0) {
+                    container.innerHTML = '<div style="color: #999; font-size: 0.8125rem; padding: 8px; text-align: center;">暂无已保存的ProxyIP地址</div>';
+                    return;
+                }
+
+                customIPList.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.style.cssText = 'flex: 1; color: #333; font-size: 0.875rem; word-break: break-all;';
+                    textSpan.textContent = item;
+                    itemDiv.appendChild(textSpan);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.textContent = '删除';
+                    deleteBtn.style.cssText = 'background: #ef4444; border: none; padding: 6px 12px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 0.8125rem; font-weight: 500; cursor: pointer; border-radius: 4px; margin-left: 8px; white-space: nowrap; transition: all 0.2s ease;';
+                    deleteBtn.onmouseover = function() { this.style.background = '#dc2626'; };
+                    deleteBtn.onmouseout = function() { this.style.background = '#ef4444'; };
+                    deleteBtn.onclick = function() {
+                        customIPList.splice(index, 1);
+                        renderCustomIPList();
+                        saveCustomIPListToConfig();
+                        updateWkRegionState();
+                    };
+                    itemDiv.appendChild(deleteBtn);
+
+                    container.appendChild(itemDiv);
+                });
+            }
+
+            function loadCustomIPListFromConfig(configP) {
+                customIPList = [];
+                if (configP && configP.trim()) {
+                    // 支持逗号分隔的多个地址
+                    customIPList = configP.split(',').map(item => item.trim()).filter(item => item);
+                }
+                renderCustomIPList();
+            }
+
+            function saveCustomIPListToConfig() {
+                const customIPInput = document.getElementById('customIP');
+                if (customIPInput) {
+                    customIPInput.value = customIPList.join(',');
+                }
+            }
+
+            function addCustomIP() {
+                const customIPInput = document.getElementById('customIP');
+                if (!customIPInput) return;
+
+                const value = customIPInput.value.trim();
+                if (!value) {
+                    alert('请输入ProxyIP地址');
+                    return;
+                }
+
+                // 检查是否已存在
+                if (customIPList.includes(value)) {
+                    alert('该地址已存在');
+                    return;
+                }
+
+                // 添加到列表
+                customIPList.push(value);
+                customIPInput.value = '';
+                renderCustomIPList();
+                saveCustomIPListToConfig();
+                updateWkRegionState();
+            }
+
             document.addEventListener('DOMContentLoaded', function() {
                 checkSystemStatus();
                 checkKVStatus();
                 checkErrorLogsCount();
-                
-                // 监听customIP输入框变化，实时更新wk地区选择状态
+
+                // 自定义ProxyIP添加按钮事件
+                const addCustomIPBtn = document.getElementById('addCustomIPBtn');
+                if (addCustomIPBtn) {
+                    addCustomIPBtn.addEventListener('click', addCustomIP);
+                }
+
+                // 监听customIP输入框回车键
                 const customIPInput = document.getElementById('customIP');
                 if (customIPInput) {
+                    customIPInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomIP();
+                        }
+                    });
                     customIPInput.addEventListener('input', function() {
                         updateWkRegionState();
                     });
@@ -4131,6 +4229,8 @@ async function handleSubscriptionPage(request, user = null) {
                 if (otherConfigForm) {
                     otherConfigForm.addEventListener('submit', async function(e) {
                         e.preventDefault();
+                        // 保存时使用列表合并后的值
+                        saveCustomIPListToConfig();
                         const configData = { ev: document.getElementById('ev').checked ? 'yes' : 'no', et: document.getElementById('et').checked ? 'yes' : 'no', ex: document.getElementById('ex').checked ? 'yes' : 'no', tp: document.getElementById('tp').value,
                             d: document.getElementById('customPath').value,
                             p: document.getElementById('customIP').value,
@@ -4497,6 +4597,7 @@ async function handleSubscriptionPage(request, user = null) {
                             addSelectedBtn.textContent = '保存中...';
                             
                             try {
+                                saveCustomIPListToConfig();
                                 const configData = {
                                     customIP: document.getElementById('customIP').value,
                                     yx: newValue,
