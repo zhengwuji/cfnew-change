@@ -425,65 +425,38 @@ async function checkIPAvailability(domain, port = 443, timeout = 2000) {
 }
 
 async function getBestBackupIP(workerRegion = '', config = {}) {
-    console.log('=== getBestBackupIP 开始 ===');
-    console.log('Worker Region:', workerRegion);
-    console.log('传入的 config:', config);
-
     if (backupIPs.length === 0) {
-        console.log('错误: backupIPs 数组为空');
         return null;
     }
 
-    console.log('总共可用 ProxyIP 数量:', backupIPs.length);
-    console.log('所有 backupIPs:', backupIPs.map(ip => `${ip.regionCode}-${ip.domain}`));
-
     // 获取用户确认的区域列表
     const selectedRegions = config.selectedProxyRegions || '';
-    console.log('从config读取的 selectedProxyRegions:', selectedRegions);
-    
     let filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
     
     // 如果用户选择了特定区域，只使用这些区域的 ProxyIP
     if (selectedRegions && selectedRegions.trim()) {
         const regionList = selectedRegions.split(',').map(r => r.trim()).filter(r => r);
-        console.log('解析后的区域列表:', regionList);
         
         if (regionList.length > 0) {
-            console.log('开始过滤 ProxyIP...');
             filteredIPs = filteredIPs.filter(ip => {
-                const matched = regionList.includes(ip.regionCode);
-                console.log(`  - ${ip.regionCode} (${ip.domain}): ${matched ? '✓ 匹配' : '✗ 不匹配'}`);
-                return matched;
+                return regionList.includes(ip.regionCode);
             });
-            
-            console.log('过滤后的 ProxyIP 数量:', filteredIPs.length);
-            console.log('过滤后的 ProxyIP:', filteredIPs.map(ip => `${ip.regionCode}-${ip.domain}`));
             
             // 如果过滤后没有可用 IP，回退到使用所有 IP
             if (filteredIPs.length === 0) {
-                console.log('警告: 过滤后没有可用 IP，回退到使用所有 IP');
                 filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
             }
         }
-    } else {
-        console.log('未配置 selectedProxyRegions，使用所有 ProxyIP');
     }
 
     if (enableRegionMatching && workerRegion) {
-        console.log('启用区域匹配，Worker 区域:', workerRegion);
         const sortedIPs = getSmartRegionSelection(workerRegion, filteredIPs);
         if (sortedIPs.length > 0) {
-            const selectedIP = sortedIPs[0];
-            console.log('最终选择的 ProxyIP:', selectedIP);
-            console.log('=== getBestBackupIP 结束 ===');
-            return selectedIP;
+            return sortedIPs[0];
         }
     }
 
-    const selectedIP = filteredIPs[0];
-    console.log('最终选择的 ProxyIP:', selectedIP);
-    console.log('=== getBestBackupIP 结束 ===');
-    return selectedIP;
+    return filteredIPs[0];
 }
 
 function getNearbyRegions(region) {
@@ -1731,13 +1704,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
             const configJSON = await env.C.get(user);
             if (configJSON) {
                 config = JSON.parse(configJSON);
-                console.log('=== handleSubscriptionRequest 读取配置 ===');
-                console.log('User:', user);
-                console.log('Config:', config);
-                console.log('selectedProxyRegions:', config.selectedProxyRegions);
             }
         } catch (error) {
-            console.error('读取配置失败:', error);
+            // 配置读取失败，使用空配置
+            config = {};
         }
     }
 
