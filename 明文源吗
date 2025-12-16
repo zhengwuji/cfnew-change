@@ -430,17 +430,32 @@ async function getBestBackupIP(workerRegion = '') {
         return null;
     }
 
-    const availableIPs = backupIPs.map(ip => ({ ...ip, available: true }));
+    // 获取用户确认的区域列表
+    const selectedRegions = getConfigValue('selectedProxyRegions', '');
+    let filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
+    
+    // 如果用户选择了特定区域，只使用这些区域的 ProxyIP
+    if (selectedRegions && selectedRegions.trim()) {
+        const regionList = selectedRegions.split(',').map(r => r.trim()).filter(r => r);
+        if (regionList.length > 0) {
+            filteredIPs = filteredIPs.filter(ip => regionList.includes(ip.regionCode));
+            
+            // 如果过滤后没有可用 IP，回退到使用所有 IP
+            if (filteredIPs.length === 0) {
+                filteredIPs = backupIPs.map(ip => ({ ...ip, available: true }));
+            }
+        }
+    }
 
     if (enableRegionMatching && workerRegion) {
-        const sortedIPs = getSmartRegionSelection(workerRegion, availableIPs);
+        const sortedIPs = getSmartRegionSelection(workerRegion, filteredIPs);
         if (sortedIPs.length > 0) {
             const selectedIP = sortedIPs[0];
             return selectedIP;
         }
     }
 
-    const selectedIP = availableIPs[0];
+    const selectedIP = filteredIPs[0];
     return selectedIP;
 }
 
@@ -4576,7 +4591,7 @@ async function handleSubscriptionPage(request, user = null) {
                 
                 // 确认选择按钮点击事件
                 if (confirmRegionBtn) {
-                    confirmRegionBtn.addEventListener('click', function() {
+                    confirmRegionBtn.addEventListener('click', async function() {
                         const selectedOptions = Array.from(proxyRegionSelect.selectedOptions);
                         confirmedRegions = selectedOptions.map(opt => opt.value);
                         
@@ -4585,13 +4600,33 @@ async function handleSubscriptionPage(request, user = null) {
                             return;
                         }
                         
-                        // 保存到 localStorage
+                        // 保存到 localStorage（前端显示用）
                         localStorage.setItem('confirmedProxyRegions', JSON.stringify(confirmedRegions));
+                        
+                        // 保存到 KV 配置（后端订阅生成用）
+                        try {
+                            const apiUrl = window.location.pathname + '/api/config';
+                            const response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    selectedProxyRegions: confirmedRegions.join(',')
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域并保存配置', 'success');
+                            } else {
+                                showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域（本地）', 'success');
+                            }
+                        } catch (error) {
+                            console.error('保存配置失败:', error);
+                            showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域（本地）', 'success');
+                        }
                         
                         // 更新显示和高亮
                         updateConfirmedDisplay();
                         applyBlueHighlight();
-                        showStatus('✅ 已确认 ' + confirmedRegions.length + ' 个区域', 'success');
                         
                         // 添加按钮点击动画
                         this.style.transform = 'scale(0.95)';
