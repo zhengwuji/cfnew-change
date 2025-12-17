@@ -1762,37 +1762,37 @@ async function handleSubscriptionRequest(request, user, url = null) {
         };
         
         for (const region of selectedRegionsList) {
-            // 查找对应区域的backupIP
+            // 查找对应区域的所有backupIP（包括CMLiussss.net和fxxk.dedyn.io的）
             const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
             if (regionIPs.length > 0) {
-                // 使用第一个匹配的IP
-                const selectedIP = regionIPs[0];
                 const regionName = regionNameMap[region] || region;
-                const backupList = [{ ip: selectedIP.domain, isp: 'ProxyIP-' + regionName, port: selectedIP.port }];
-                await addNodesFromList(backupList);
-            }
-        }
-    }
-    
-    // 如果用户选择了区域，为每个选中的区域生成ProxyIP节点
-    if (selectedRegionsList.length > 0) {
-        const regionNameMap = {
-            'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
-            'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
-            'PL': '波兰', 'RU': '俄罗斯', 'CH': '瑞士', 'LV': '拉脱维亚',
-            'US': '美国', 'CA': '加拿大',
-            'Aliyun': '阿里云', 'Oracle': '甲骨文', 'DigitalOcean': '数码海', 'Vultr': 'Vultr'
-        };
-        
-        for (const region of selectedRegionsList) {
-            // 查找对应区域的backupIP
-            const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
-            if (regionIPs.length > 0) {
-                // 使用第一个匹配的IP
-                const selectedIP = regionIPs[0];
-                const regionName = regionNameMap[region] || region;
-                const backupList = [{ ip: selectedIP.domain, isp: 'ProxyIP-' + regionName, port: selectedIP.port }];
-                await addNodesFromList(backupList);
+                
+                // 为每个匹配的IP生成节点，优先使用CMLiussss.net，然后是fxxk.dedyn.io
+                const cmliIPs = regionIPs.filter(ip => ip.domain.includes('CMLiussss.net') || ip.domain.includes('cmliussss.net'));
+                const fxxkIPs = regionIPs.filter(ip => ip.domain.includes('fxxk.dedyn.io'));
+                
+                // 优先添加CMLiussss.net的节点
+                if (cmliIPs.length > 0) {
+                    for (const selectedIP of cmliIPs) {
+                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
+                        await addNodesFromList(backupList);
+                    }
+                }
+                
+                // 然后添加fxxk.dedyn.io的节点（如果有）
+                if (fxxkIPs.length > 0) {
+                    for (const selectedIP of fxxkIPs) {
+                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
+                        await addNodesFromList(backupList);
+                    }
+                }
+                
+                // 如果没有找到匹配的，使用第一个可用的
+                if (cmliIPs.length === 0 && fxxkIPs.length === 0 && regionIPs.length > 0) {
+                    const selectedIP = regionIPs[0];
+                    const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
+                    await addNodesFromList(backupList);
+                }
             }
         }
     }
@@ -3985,10 +3985,33 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = selectedRegions.includes(options[i].value);
                         }
-                        // 更新显示
-                        if (typeof updateSelectedRegionsDisplay === 'function') {
-                            updateSelectedRegionsDisplay();
-                        }
+                        // 更新显示 - 使用setTimeout确保DOM已更新
+                        setTimeout(function() {
+                            const selectedRegionsListEl = document.getElementById('selectedRegionsList');
+                            if (selectedRegionsListEl && proxyRegionSelect) {
+                                const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
+                                const regionNameMap = {
+                                    'GLOBAL': '🌐 全球优选', 'HK': '🇭🇰 香港', 'SG': '🇸🇬 新加坡', 'JP': '🇯🇵 日本', 'KR': '🇰🇷 韩国', 'IN': '🇮🇳 印度',
+                                    'GB': '🇬🇧 英国', 'FR': '🇫🇷 法国', 'DE': '🇩🇪 德国', 'NL': '🇳🇱 荷兰', 'SE': '🇸🇪 瑞典', 'FI': '🇫🇮 芬兰',
+                                    'PL': '🇵🇱 波兰', 'RU': '🇷🇺 俄罗斯', 'CH': '🇨🇭 瑞士', 'LV': '🇱🇻 拉脱维亚',
+                                    'US': '🇺🇸 美国', 'CA': '🇨🇦 加拿大',
+                                    'Aliyun': '☁️ 阿里云', 'Oracle': '🔮 甲骨文', 'DigitalOcean': '🌊 数码海', 'Vultr': '⚡ Vultr'
+                                };
+                                
+                                if (selectedValues.length === 0) {
+                                    selectedRegionsListEl.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域，订阅将使用默认节点</span>';
+                                } else {
+                                    const regionsHtml = selectedValues.map(value => {
+                                        const name = regionNameMap[value] || value;
+                                        return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 4px 10px; background: #3b82f6; color: #ffffff; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">' + name + '</span>';
+                                    }).join('');
+                                    
+                                    selectedRegionsListEl.innerHTML = regionsHtml + 
+                                        '<div style="margin-top: 8px; padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.8125rem; color: #1e40af;">' +
+                                        '<strong>✓ 已确认选中 ' + selectedValues.length + ' 个区域</strong>，订阅将生成对应区域的节点</div>';
+                                }
+                            }
+                        }, 100);
                     }
                     
                     // 更新路径类型显示
@@ -4559,14 +4582,19 @@ async function handleSubscriptionPage(request, user = null) {
                     const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
                     
                     if (selectedValues.length === 0) {
-                        selectedRegionsList.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域</span>';
+                        selectedRegionsList.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域，订阅将使用默认节点</span>';
                         return;
                     }
                     
-                    selectedRegionsList.innerHTML = selectedValues.map(value => {
+                    // 显示选中的区域，并添加确认提示
+                    const regionsHtml = selectedValues.map(value => {
                         const name = regionNameMap[value] || value;
-                        return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">' + name + '</span>';
+                        return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 4px 10px; background: #3b82f6; color: #ffffff; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">' + name + '</span>';
                     }).join('');
+                    
+                    selectedRegionsList.innerHTML = regionsHtml + 
+                        '<div style="margin-top: 8px; padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.8125rem; color: #1e40af;">' +
+                        '<strong>✓ 已确认选中 ' + selectedValues.length + ' 个区域</strong>，订阅将生成对应区域的节点</div>';
                 }
                 
                 // 监听区域选择变化
