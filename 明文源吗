@@ -1198,6 +1198,29 @@ export default {
                 </div>
                 <div class="endpoint-desc">API测试端点</div>
             </div>
+
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <span>https://${hostname}/{UUID}/sub?onlyProxyRegions=1</span>
+                    <span class="badge">需要UUID</span>
+                </div>
+                <div class="endpoint-desc">
+                    仅输出当前在“ProxyIP 区域选择”中勾选的地区节点，用于客户端单独分组或测试（不包含GitHub/Github优选IP等其它来源）。
+                    可选参数：<code>&plain=1</code> 返回明文列表，方便人工查看。
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-url">
+                    <span class="endpoint-method">GET</span>
+                    <a href="https://${hostname}/{UUID}/trace" target="_blank">https://${hostname}/{UUID}/trace</a>
+                    <span class="badge">需要UUID</span>
+                </div>
+                <div class="endpoint-desc">
+                    返回当前请求命中的 Cloudflare 接入点信息（colo / city / country 等），用于验证实际入口机房与节点别名是否一致。
+                </div>
+            </div>
         </div>
         
         <div class="section">
