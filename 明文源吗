@@ -1742,7 +1742,19 @@ async function handleSubscriptionRequest(request, user, url = null) {
     }
 
     // 确保KV配置已加载（如果之前没有加载）
+    // #region agent log
+    console.log('[DEBUG] 订阅生成-检查KV配置:', {
+        hasKVConfig: !!kvConfig,
+        kvConfigKeys: kvConfig ? Object.keys(kvConfig) : [],
+        kvConfigSize: kvConfig ? Object.keys(kvConfig).length : 0,
+        hasKVStore: !!kvStore
+    });
+    // #endregion
+    
     if (!kvConfig || Object.keys(kvConfig).length === 0) {
+        // #region agent log
+        console.log('[DEBUG] 订阅生成-重新加载KV配置');
+        // #endregion
         await loadKVConfig();
     }
     
