@@ -1715,6 +1715,11 @@ async function handleSubscriptionRequest(request, user, url = null) {
         }
     }
 
+    // 确保KV配置已加载（如果之前没有加载）
+    if (!kvConfig || Object.keys(kvConfig).length === 0) {
+        await loadKVConfig();
+    }
+    
     // 获取用户选中的区域
     const selectedProxyRegions = getConfigValue('proxyRegions', '');
     const selectedRegionsList = selectedProxyRegions ? selectedProxyRegions.split(',').map(r => r.trim()).filter(r => r) : [];
@@ -1726,7 +1731,9 @@ async function handleSubscriptionRequest(request, user, url = null) {
         selectedRegionsListLength: selectedRegionsList.length,
         kvConfigProxyRegions: kvConfig.proxyRegions,
         kvConfigKeys: Object.keys(kvConfig),
-        getConfigValueResult: getConfigValue('proxyRegions', '')
+        kvConfigSize: Object.keys(kvConfig).length,
+        getConfigValueResult: getConfigValue('proxyRegions', ''),
+        hasKVStore: !!kvStore
     });
     // #endregion
     
