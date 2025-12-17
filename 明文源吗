@@ -1715,6 +1715,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
         }
     }
 
+    // 获取用户选中的区域
+    const selectedProxyRegions = getConfigValue('proxyRegions', '');
+    const selectedRegionsList = selectedProxyRegions ? selectedProxyRegions.split(',').map(r => r.trim()).filter(r => r) : [];
+    
     if (currentWorkerRegion === 'CUSTOM') {
         const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
         await addNodesFromList(nativeList);
@@ -1743,6 +1747,52 @@ async function handleSubscriptionRequest(request, user, url = null) {
             } else {
                 const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
                 await addNodesFromList(nativeList);
+            }
+        }
+    }
+    
+    // 如果用户选择了区域，为每个选中的区域生成ProxyIP节点
+    if (selectedRegionsList.length > 0) {
+        const regionNameMap = {
+            'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
+            'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
+            'PL': '波兰', 'RU': '俄罗斯', 'CH': '瑞士', 'LV': '拉脱维亚',
+            'US': '美国', 'CA': '加拿大',
+            'Aliyun': '阿里云', 'Oracle': '甲骨文', 'DigitalOcean': '数码海', 'Vultr': 'Vultr'
+        };
+        
+        for (const region of selectedRegionsList) {
+            // 查找对应区域的backupIP
+            const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
+            if (regionIPs.length > 0) {
+                // 使用第一个匹配的IP
+                const selectedIP = regionIPs[0];
+                const regionName = regionNameMap[region] || region;
+                const backupList = [{ ip: selectedIP.domain, isp: 'ProxyIP-' + regionName, port: selectedIP.port }];
+                await addNodesFromList(backupList);
+            }
+        }
+    }
+    
+    // 如果用户选择了区域，为每个选中的区域生成ProxyIP节点
+    if (selectedRegionsList.length > 0) {
+        const regionNameMap = {
+            'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
+            'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
+            'PL': '波兰', 'RU': '俄罗斯', 'CH': '瑞士', 'LV': '拉脱维亚',
+            'US': '美国', 'CA': '加拿大',
+            'Aliyun': '阿里云', 'Oracle': '甲骨文', 'DigitalOcean': '数码海', 'Vultr': 'Vultr'
+        };
+        
+        for (const region of selectedRegionsList) {
+            // 查找对应区域的backupIP
+            const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
+            if (regionIPs.length > 0) {
+                // 使用第一个匹配的IP
+                const selectedIP = regionIPs[0];
+                const regionName = regionNameMap[region] || region;
+                const backupList = [{ ip: selectedIP.domain, isp: 'ProxyIP-' + regionName, port: selectedIP.port }];
+                await addNodesFromList(backupList);
             }
         }
     }
@@ -3115,10 +3165,30 @@ async function handleSubscriptionPage(request, user = null) {
                                         <option value="Vultr">⚡ Vultr</option>
                                     </optgroup>
                                 </select>
+                                <style>
+                                    #proxyRegionSelect option:checked {
+                                        background: #3b82f6 !important;
+                                        color: #ffffff !important;
+                                    }
+                                    #proxyRegionSelect option:hover {
+                                        background: #dbeafe !important;
+                                    }
+                                </style>
                                 <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 8px; line-height: 1.5;">
                                     💡 默认已选中常用区域（香港、新加坡、日本、韩国、德国、美国）。按住 <strong>Ctrl</strong> (Windows) 或 <strong>Cmd</strong> (Mac) 可多选。
                                     <br>包含 <span style="color: #22c55e; font-weight: 600;">CMLiussss.net</span> (3小时更新) 和 <span style="color: #3b82f6; font-weight: 600;">fxxk.dedyn.io</span> (4-12小时更新) 两个高质量源。
                                 </small>
+                                <div id="selectedRegionsDisplay" style="margin-top: 10px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #3b82f6; border-radius: 6px; min-height: 40px;">
+                                    <div style="color: #3b82f6; font-weight: 600; font-size: 0.875rem; margin-bottom: 6px;">已选中的区域：</div>
+                                    <div id="selectedRegionsList" style="color: #1e40af; font-size: 0.875rem; line-height: 1.8;">
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇭🇰 香港</span>
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇸🇬 新加坡</span>
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇯🇵 日本</span>
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇰🇷 韩国</span>
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇩🇪 德国</span>
+                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇺🇸 美国</span>
+                                    </div>
+                                </div>
                                 <div style="margin-top: 10px; display: flex; gap: 8px;">
                                     <button type="button" id="selectAllRegions" style="flex: 1; background: #3b82f6; border: none; padding: 8px 16px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease;">✓ 全选</button>
                                     <button type="button" id="deselectAllRegions" style="flex: 1; background: #6b7280; border: none; padding: 8px 16px; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 500; cursor: pointer; border-radius: 6px; font-size: 0.875rem; transition: all 0.2s ease;">✗ 清空</button>
@@ -3907,6 +3977,20 @@ async function handleSubscriptionPage(request, user = null) {
                     document.getElementById('portControl').value = config.dkby || '';
                     document.getElementById('preferredControl').value = config.yxby || '';
                     
+                    // 恢复选中的区域
+                    const proxyRegionSelect = document.getElementById('proxyRegionSelect');
+                    if (proxyRegionSelect && config.proxyRegions) {
+                        const selectedRegions = config.proxyRegions.split(',').map(r => r.trim()).filter(r => r);
+                        const options = proxyRegionSelect.options;
+                        for (let i = 0; i < options.length; i++) {
+                            options[i].selected = selectedRegions.includes(options[i].value);
+                        }
+                        // 更新显示
+                        if (typeof updateSelectedRegionsDisplay === 'function') {
+                            updateSelectedRegionsDisplay();
+                        }
+                    }
+                    
                     // 更新路径类型显示
                     updatePathTypeStatus(config.d);
                     
@@ -4366,13 +4450,19 @@ async function handleSubscriptionPage(request, user = null) {
                         e.preventDefault();
                         // 保存时使用列表合并后的值
                         saveCustomIPListToConfig();
+                        
+                        // 获取选中的区域
+                        const proxyRegionSelect = document.getElementById('proxyRegionSelect');
+                        const selectedRegions = proxyRegionSelect ? Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value).join(',') : '';
+                        
                         const configData = { ev: document.getElementById('ev').checked ? 'yes' : 'no', et: document.getElementById('et').checked ? 'yes' : 'no', ex: document.getElementById('ex').checked ? 'yes' : 'no', tp: document.getElementById('tp').value,
                             d: document.getElementById('customPath').value,
                             p: document.getElementById('customIP').value,
                             yx: document.getElementById('yx').value,
                             yxURL: document.getElementById('yxURL').value,
                             s: document.getElementById('socksConfig').value,
-                            homepage: document.getElementById('customHomepage').value
+                            homepage: document.getElementById('customHomepage').value,
+                            proxyRegions: selectedRegions
                         };
                         
                         // 确保至少选择一个协议
@@ -4434,6 +4524,57 @@ async function handleSubscriptionPage(request, user = null) {
                 const selectAllRegionsBtn = document.getElementById('selectAllRegions');
                 const deselectAllRegionsBtn = document.getElementById('deselectAllRegions');
                 const selectAsiaRegionsBtn = document.getElementById('selectAsiaRegions');
+                const selectedRegionsList = document.getElementById('selectedRegionsList');
+                
+                // 区域名称映射
+                const regionNameMap = {
+                    'GLOBAL': '🌐 全球优选',
+                    'HK': '🇭🇰 香港',
+                    'SG': '🇸🇬 新加坡',
+                    'JP': '🇯🇵 日本',
+                    'KR': '🇰🇷 韩国',
+                    'IN': '🇮🇳 印度',
+                    'GB': '🇬🇧 英国',
+                    'FR': '🇫🇷 法国',
+                    'DE': '🇩🇪 德国',
+                    'NL': '🇳🇱 荷兰',
+                    'SE': '🇸🇪 瑞典',
+                    'FI': '🇫🇮 芬兰',
+                    'PL': '🇵🇱 波兰',
+                    'RU': '🇷🇺 俄罗斯',
+                    'CH': '🇨🇭 瑞士',
+                    'LV': '🇱🇻 拉脱维亚',
+                    'US': '🇺🇸 美国',
+                    'CA': '🇨🇦 加拿大',
+                    'Aliyun': '☁️ 阿里云',
+                    'Oracle': '🔮 甲骨文',
+                    'DigitalOcean': '🌊 数码海',
+                    'Vultr': '⚡ Vultr'
+                };
+                
+                // 更新已选中区域显示
+                function updateSelectedRegionsDisplay() {
+                    if (!selectedRegionsList || !proxyRegionSelect) return;
+                    
+                    const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
+                    
+                    if (selectedValues.length === 0) {
+                        selectedRegionsList.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域</span>';
+                        return;
+                    }
+                    
+                    selectedRegionsList.innerHTML = selectedValues.map(value => {
+                        const name = regionNameMap[value] || value;
+                        return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">' + name + '</span>';
+                    }).join('');
+                }
+                
+                // 监听区域选择变化
+                if (proxyRegionSelect) {
+                    proxyRegionSelect.addEventListener('change', updateSelectedRegionsDisplay);
+                    // 初始化显示
+                    updateSelectedRegionsDisplay();
+                }
                 
                 if (selectAllRegionsBtn) {
                     selectAllRegionsBtn.addEventListener('click', function() {
@@ -4441,6 +4582,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = true;
                         }
+                        updateSelectedRegionsDisplay();
                         showStatus('✓ 已选中所有区域', 'success');
                     });
                 }
@@ -4451,6 +4593,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = false;
                         }
+                        updateSelectedRegionsDisplay();
                         showStatus('✗ 已清空所有选择', 'info');
                     });
                 }
@@ -4462,6 +4605,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = asiaRegions.includes(options[i].value);
                         }
+                        updateSelectedRegionsDisplay();
                         showStatus('🌏 已选中亚洲区域', 'success');
                     });
                 }
