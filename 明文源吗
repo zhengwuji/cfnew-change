@@ -3224,16 +3224,16 @@ async function handleSubscriptionPage(request, user = null) {
                                         <option value="GLOBAL">🌐 全球优选</option>
                                     </optgroup>
                                     <optgroup label="🌏 亚洲地区">
-                                        <option value="HK" selected>🇭🇰 香港</option>
-                                        <option value="SG" selected>🇸🇬 新加坡</option>
-                                        <option value="JP" selected>🇯🇵 日本</option>
-                                        <option value="KR" selected>🇰🇷 韩国</option>
+                                        <option value="HK">🇭🇰 香港</option>
+                                        <option value="SG">🇸🇬 新加坡</option>
+                                        <option value="JP">🇯🇵 日本</option>
+                                        <option value="KR">🇰🇷 韩国</option>
                                         <option value="IN">🇮🇳 印度</option>
                                     </optgroup>
                                     <optgroup label="🌍 欧洲地区">
                                         <option value="GB">🇬🇧 英国</option>
                                         <option value="FR">🇫🇷 法国</option>
-                                        <option value="DE" selected>🇩🇪 德国</option>
+                                        <option value="DE">🇩🇪 德国</option>
                                         <option value="NL">🇳🇱 荷兰</option>
                                         <option value="SE">🇸🇪 瑞典</option>
                                         <option value="FI">🇫🇮 芬兰</option>
@@ -3243,7 +3243,7 @@ async function handleSubscriptionPage(request, user = null) {
                                         <option value="LV">🇱🇻 拉脱维亚</option>
                                     </optgroup>
                                     <optgroup label="🌎 北美地区">
-                                        <option value="US" selected>🇺🇸 美国</option>
+                                        <option value="US">🇺🇸 美国</option>
                                         <option value="CA">🇨🇦 加拿大</option>
                                     </optgroup>
                                     <optgroup label="☁️ 云服务商">
@@ -3269,12 +3269,7 @@ async function handleSubscriptionPage(request, user = null) {
                                 <div id="selectedRegionsDisplay" style="margin-top: 10px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #3b82f6; border-radius: 6px; min-height: 40px;">
                                     <div style="color: #3b82f6; font-weight: 600; font-size: 0.875rem; margin-bottom: 6px;">已选中的区域：</div>
                                     <div id="selectedRegionsList" style="color: #1e40af; font-size: 0.875rem; line-height: 1.8;">
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇭🇰 香港</span>
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇸🇬 新加坡</span>
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇯🇵 日本</span>
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇰🇷 韩国</span>
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇩🇪 德国</span>
-                                        <span style="display: inline-block; margin: 2px 6px 2px 0; padding: 2px 8px; background: #3b82f6; color: #ffffff; border-radius: 4px;">🇺🇸 美国</span>
+                                        <span style="color: #999; font-style: italic;">加载中...</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 10px; display: flex; gap: 8px;">
@@ -3952,6 +3947,7 @@ async function handleSubscriptionPage(request, user = null) {
                         
                         if (response.status === 503) {
                             // KV未配置
+                            window.__kvEnabled = false;
                             document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                             document.getElementById('configCard').style.display = 'block';
                             document.getElementById('currentConfig').textContent = t.kvNotConfigured;
@@ -3961,21 +3957,25 @@ async function handleSubscriptionPage(request, user = null) {
                         
                             // 检查响应是否包含KV配置信息
                             if (data && data.kvEnabled === true) {
+                                window.__kvEnabled = true;
                                 document.getElementById('kvStatus').innerHTML = '<span style="color: #44ff44;">' + t.kvEnabled + '</span>';
                                 document.getElementById('configContent').style.display = 'block';
                                 document.getElementById('configCard').style.display = 'block';
                                 await loadCurrentConfig();
                             } else {
+                                window.__kvEnabled = false;
                                 document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                                 document.getElementById('configCard').style.display = 'block';
                                 document.getElementById('currentConfig').textContent = t.kvNotEnabled;
                                 }
                         } catch (jsonError) {
+                            window.__kvEnabled = false;
                             document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvCheckFailed + '</span>';
                             document.getElementById('configCard').style.display = 'block';
                             document.getElementById('currentConfig').textContent = t.kvCheckFailedFormat;
                         }
                     } else {
+                        window.__kvEnabled = false;
                         document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                         document.getElementById('configCard').style.display = 'block';
                         document.getElementById('currentConfig').textContent = t.kvCheckFailedStatus + response.status;
@@ -3995,6 +3995,7 @@ async function handleSubscriptionPage(request, user = null) {
                     
                     const t = translations;
                     
+                    window.__kvEnabled = false;
                     document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                     document.getElementById('configCard').style.display = 'block';
                     document.getElementById('currentConfig').textContent = t.kvCheckFailedError + error.message;
@@ -4017,6 +4018,8 @@ async function handleSubscriptionPage(request, user = null) {
                         return;
                     }
                     const config = await response.json();
+                    // 保存一份“已保存到KV的地区选择”，用于UI显示与对比
+                    window.__savedProxyRegions = (config && typeof config.proxyRegions === 'string') ? config.proxyRegions : '';
                     
                     // 过滤掉内部字段 kvEnabled
                     const displayConfig = {};
@@ -4085,60 +4088,49 @@ async function handleSubscriptionPage(request, user = null) {
                         fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3987','message':'加载配置-清除默认状态',data:{clearedCount:options.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
                         // #endregion
                         
-                        // 然后根据配置恢复选中状态
-                        if (config.proxyRegions) {
-                            const selectedRegions = config.proxyRegions.split(',').map(r => r.trim()).filter(r => r);
-                            
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3992','message':'加载配置-解析选中区域',data:{selectedRegions:selectedRegions,selectedRegionsLength:selectedRegions.length,rawConfigValue:config.proxyRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion
-                            
-                            for (let i = 0; i < options.length; i++) {
-                                options[i].selected = selectedRegions.includes(options[i].value);
-                            }
-                            
-                            const afterSelected = Array.from(options).filter(o => o.selected).map(o => o.value);
-                            
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4000','message':'加载配置-应用后状态',data:{afterSelected:afterSelected,expectedSelected:selectedRegions,match:JSON.stringify(afterSelected.sort())===JSON.stringify(selectedRegions.sort())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion
+                        // 然后根据：KV配置 > localStorage > 默认常用 的优先级恢复
+                        const localSaved = (localStorage.getItem('proxyRegionsLocal') || '').trim();
+                        const rawRegions = (config.proxyRegions && String(config.proxyRegions).trim()) ? String(config.proxyRegions).trim() : (localSaved ? localSaved : '');
+                        let selectedRegions = [];
+                        if (rawRegions) {
+                            selectedRegions = rawRegions.split(',').map(r => r.trim()).filter(r => r);
                         } else {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4005','message':'加载配置-无配置数据',data:{allCleared:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                            // 没有任何保存值时，使用默认常用区域
+                            selectedRegions = ['HK', 'SG', 'JP', 'KR', 'DE', 'US'];
+                        }
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:loadCurrentConfig','message':'加载配置-最终用于恢复的区域来源',data:{kvValue:config.proxyRegions,localSaved:localSaved,finalRaw:rawRegions,finalSelected:selectedRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
+                        // #endregion
+                        
+                        // #region agent log（保留：原有调试点）
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3992','message':'加载配置-解析选中区域',data:{selectedRegions:selectedRegions,selectedRegionsLength:selectedRegions.length,rawConfigValue:config.proxyRegions,localSaved:localSaved,usedRaw:rawRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                        // #endregion
+                        
+                        for (let i = 0; i < options.length; i++) {
+                            options[i].selected = selectedRegions.includes(options[i].value);
+                        }
+                        
+                        // 同步刷新“已选中的区域”UI，并把当前选择写回 localStorage
+                        try {
+                            const nowSelected = Array.from(options).filter(o => o.selected).map(o => o.value);
+                            localStorage.setItem('proxyRegionsLocal', nowSelected.join(','));
+                        } catch (e) {}
+                        
+                        const afterSelected = Array.from(options).filter(o => o.selected).map(o => o.value);
+                        // #region agent log（保留：原有调试点）
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4000','message':'加载配置-应用后状态',data:{afterSelected:afterSelected,expectedSelected:selectedRegions,match:JSON.stringify(afterSelected.sort())===JSON.stringify(selectedRegions.slice().sort()),hasKVProxyRegions:!!config.proxyRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                        // #endregion
+                        
+                        if (!config.proxyRegions) {
+                            // #region agent log（保留：原有调试点）
+                            fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4005','message':'加载配置-无配置数据',data:{allCleared:false,usedFallback:true,localSaved:localSaved,usedDefault:!localSaved},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
                             // #endregion
                         }
-                        // 更新显示 - 使用setTimeout确保DOM已更新
-                        setTimeout(function() {
-                            const selectedRegionsListEl = document.getElementById('selectedRegionsList');
-                            if (selectedRegionsListEl && proxyRegionSelect) {
-                                const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
-                                const regionNameMap = {
-                                    'GLOBAL': '🌐 全球优选', 'HK': '🇭🇰 香港', 'SG': '🇸🇬 新加坡', 'JP': '🇯🇵 日本', 'KR': '🇰🇷 韩国', 'IN': '🇮🇳 印度',
-                                    'GB': '🇬🇧 英国', 'FR': '🇫🇷 法国', 'DE': '🇩🇪 德国', 'NL': '🇳🇱 荷兰', 'SE': '🇸🇪 瑞典', 'FI': '🇫🇮 芬兰',
-                                    'PL': '🇵🇱 波兰', 'RU': '🇷🇺 俄罗斯', 'CH': '🇨🇭 瑞士', 'LV': '🇱🇻 拉脱维亚',
-                                    'US': '🇺🇸 美国', 'CA': '🇨🇦 加拿大',
-                                    'Aliyun': '☁️ 阿里云', 'Oracle': '🔮 甲骨文', 'DigitalOcean': '🌊 数码海', 'Vultr': '⚡ Vultr'
-                                };
-                                
-                                if (selectedValues.length === 0) {
-                                    selectedRegionsListEl.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域，订阅将使用默认节点</span>';
-                                } else {
-                                    const regionsHtml = selectedValues.map(value => {
-                                        const name = regionNameMap[value] || value;
-                                        return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 4px 10px; background: #3b82f6; color: #ffffff; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">' + name + '</span>';
-                                    }).join('');
-                                    
-                                    selectedRegionsListEl.innerHTML = regionsHtml + 
-                                        '<div style="margin-top: 8px; padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.8125rem; color: #1e40af;">' +
-                                        '<strong>✓ 已确认选中 ' + selectedValues.length + ' 个区域</strong>，订阅将生成对应区域的节点</div>';
-                                }
-                            }
-                        }, 100);
-                    }
-                    
-                    // 立即更新UI显示（不等待setTimeout）
-                    if (typeof window.updateSelectedRegionsDisplay === 'function') {
-                        window.updateSelectedRegionsDisplay();
+                        
+                        if (typeof window.updateSelectedRegionsDisplay === 'function') {
+                            window.updateSelectedRegionsDisplay();
+                        }
                     }
                     
                     // 更新路径类型显示
@@ -4710,6 +4702,90 @@ async function handleSubscriptionPage(request, user = null) {
                     'Vultr': '⚡ Vultr'
                 };
                 
+                // 自动保存：仅保存 proxyRegions（不触发页面刷新）
+                let __autoSaveInFlight = false;
+                let __autoSavePending = null;
+                let __autoSaveLast = null;
+                
+                async function saveConfigWithOptions(configData, options) {
+                    options = options || {};
+                    const apiUrl = window.location.pathname + '/api/config';
+                    const reloadAfterSave = options.reload !== false;
+                    const silent = options.silent === true;
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:saveConfigWithOptions','message':'保存配置-发起请求',data:{keys:Object.keys(configData||{}),proxyRegions:configData?configData.proxyRegions:undefined,reloadAfterSave:reloadAfterSave,silent:silent,kvEnabled:window.__kvEnabled===true},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(configData)
+                        });
+                        
+                        if (response.status === 503) {
+                            if (!silent) showStatus('KV存储未配置，无法保存配置。请先在Cloudflare Workers中配置KV存储。', 'error');
+                            window.__kvEnabled = false;
+                            return { ok: false, status: 503 };
+                        }
+                        
+                        const text = await response.text();
+                        let result = null;
+                        try { result = JSON.parse(text); } catch (e) {}
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:saveConfigWithOptions','message':'保存配置-收到响应',data:{status:response.status,ok:response.ok,success:result?result.success:undefined,message:result?result.message:undefined,serverProxyRegions:result&&result.config?result.config.proxyRegions:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+                        // #endregion
+                        
+                        if (!response.ok) {
+                            if (!silent) showStatus((result && result.message) ? result.message : ('保存失败: ' + text), 'error');
+                            return { ok: false, status: response.status, result };
+                        }
+                        
+                        if (!silent && result) {
+                            showStatus(result.message, result.success ? 'success' : 'error');
+                        }
+                        
+                        if (result && result.success) {
+                            await loadCurrentConfig();
+                            updateWkRegionState();
+                            if (reloadAfterSave) {
+                                setTimeout(function() { window.location.reload(); }, 1500);
+                            }
+                        }
+                        return { ok: true, status: response.status, result };
+                    } catch (error) {
+                        if (!silent) showStatus('保存失败: ' + error.message, 'error');
+                        return { ok: false, status: 0, error: error.message };
+                    }
+                }
+                
+                async function autoSaveProxyRegions(selectedRegionsStr) {
+                    if (window.__kvEnabled !== true) return;
+                    if (selectedRegionsStr === __autoSaveLast) return;
+                    __autoSaveLast = selectedRegionsStr;
+                    
+                    if (__autoSaveInFlight) {
+                        __autoSavePending = selectedRegionsStr;
+                        return;
+                    }
+                    
+                    __autoSaveInFlight = true;
+                    try {
+                        await saveConfigWithOptions({ proxyRegions: selectedRegionsStr }, { reload: false, silent: true });
+                    } finally {
+                        __autoSaveInFlight = false;
+                        if (__autoSavePending !== null && __autoSavePending !== __autoSaveLast) {
+                            const next = __autoSavePending;
+                            __autoSavePending = null;
+                            await autoSaveProxyRegions(next);
+                        } else {
+                            __autoSavePending = null;
+                        }
+                    }
+                }
+                
                 // 更新已选中区域显示
                 function updateSelectedRegionsDisplay() {
                     if (!selectedRegionsList || !proxyRegionSelect) return;
@@ -4731,14 +4807,36 @@ async function handleSubscriptionPage(request, user = null) {
                         return '<span style="display: inline-block; margin: 2px 6px 2px 0; padding: 4px 10px; background: #3b82f6; color: #ffffff; border-radius: 4px; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">' + name + '</span>';
                     }).join('');
                     
+                    const currentStr = selectedValues.join(',');
+                    const savedStr = (typeof window.__savedProxyRegions === 'string') ? window.__savedProxyRegions : '';
+                    const savedHint = (savedStr && savedStr === currentStr)
+                        ? '<div style="margin-top:6px;color:#16a34a;font-size:0.8125rem;">已保存到KV：' + savedStr + '</div>'
+                        : '<div style="margin-top:6px;color:#f59e0b;font-size:0.8125rem;">未保存到KV（当前：' + currentStr + '）</div>';
+                    
                     selectedRegionsList.innerHTML = regionsHtml + 
                         '<div style="margin-top: 8px; padding: 8px; background: #dbeafe; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.8125rem; color: #1e40af;">' +
-                        '<strong>✓ 已确认选中 ' + selectedValues.length + ' 个区域</strong>，订阅将生成对应区域的节点</div>';
+                        '<strong>✓ 已确认选中 ' + selectedValues.length + ' 个区域</strong>，订阅将生成对应区域的节点</div>' + savedHint;
                 }
+                
+                // 导出为全局函数（修复：按钮调用 window.updateSelectedRegionsDisplay 报错的问题）
+                window.updateSelectedRegionsDisplay = updateSelectedRegionsDisplay;
                 
                 // 监听区域选择变化
                 if (proxyRegionSelect) {
-                    proxyRegionSelect.addEventListener('change', updateSelectedRegionsDisplay);
+                    proxyRegionSelect.addEventListener('change', function() {
+                        // 先更新UI
+                        updateSelectedRegionsDisplay();
+                        // localStorage 保底记忆（刷新后保持）
+                        try {
+                            const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
+                            localStorage.setItem('proxyRegionsLocal', selectedValues.join(','));
+                        } catch (e) {}
+                        // 自动保存到KV（不刷新页面）
+                        try {
+                            const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
+                            autoSaveProxyRegions(selectedValues.join(','));
+                        } catch (e) {}
+                    });
                     // 初始化显示
                     updateSelectedRegionsDisplay();
                 }
