@@ -1725,6 +1725,86 @@ async function handleSubscriptionRequest(request, user, url = null) {
         });
     }
 
+    // Debug 模式：返回“将会生成哪些地区节点”的JSON（不返回完整链接，避免泄露 UUID）
+    const debugMode = url.searchParams.get('debug') === '1';
+    if (debugMode) {
+        const workerDomain = url.hostname;
+        // 确保KV配置已加载
+        if (!kvConfig || Object.keys(kvConfig).length === 0) {
+            await loadKVConfig();
+        }
+        const selectedProxyRegions = getConfigValue('proxyRegions', '');
+        const selectedRegionsList = selectedProxyRegions ? selectedProxyRegions.split(',').map(r => r.trim()).filter(r => r) : [];
+        
+        const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
+        const CF_HTTPS_PORTS = [443, 2053, 2083, 2087, 2096, 8443];
+        
+        function predictNames(isp, port) {
+            const nodeNameBase = String(isp || '').replace(/\s/g, '_');
+            const out = [];
+            if (CF_HTTPS_PORTS.includes(port) || !CF_HTTP_PORTS.includes(port)) {
+                // VLESS
+                if (ev) out.push(`${nodeNameBase}-${port}-WS-TLS`);
+                // Trojan
+                if (et) out.push(`${nodeNameBase}-${port}-Trojan-WS-TLS`);
+            } else {
+                // HTTP 非 TLS
+                if (!disableNonTLS) {
+                    if (ev) out.push(`${nodeNameBase}-${port}-WS`);
+                    if (et) out.push(`${nodeNameBase}-${port}-Trojan-WS`);
+                }
+            }
+            // xhttp 节点命名不在这里展开（需要额外逻辑），先不输出
+            return out;
+        }
+        
+        const regionNameMap = {
+            'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
+            'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
+            'PL': '波兰', 'RU': '俄罗斯', 'CH': '瑞士', 'LV': '拉脱维亚',
+            'US': '美国', 'CA': '加拿大',
+            'Aliyun': '阿里云', 'Oracle': '甲骨文', 'DigitalOcean': '数码海', 'Vultr': 'Vultr'
+        };
+        
+        const regions = [];
+        for (const region of selectedRegionsList) {
+            const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
+            const cmliIPs = regionIPs.filter(ip => ip.domain.includes('CMLiussss.net') || ip.domain.includes('cmliussss.net'));
+            const fxxkIPs = regionIPs.filter(ip => ip.domain.includes('fxxk.dedyn.io'));
+            const chosen = (cmliIPs.length ? cmliIPs : (fxxkIPs.length ? fxxkIPs : regionIPs));
+            const regionName = regionNameMap[region] || region;
+            const nodes = chosen.map(ip => ({
+                domain: ip.domain,
+                port: ip.port,
+                names: predictNames(`${regionName}-ProxyIP`, ip.port)
+            }));
+            regions.push({
+                region,
+                regionName,
+                regionIPsCount: regionIPs.length,
+                domains: regionIPs.map(x => x.domain),
+                chosenCount: chosen.length,
+                nodes
+            });
+        }
+        
+        return new Response(JSON.stringify({
+            debug: true,
+            workerDomain,
+            kvEnabled: !!kvStore,
+            kvConfigKeys: kvConfig ? Object.keys(kvConfig) : [],
+            kvProxyRegions: kvConfig ? kvConfig.proxyRegions : undefined,
+            selectedProxyRegions,
+            selectedRegionsList,
+            backupIPsCount: backupIPs.length,
+            sampleBackupIPs: backupIPs.slice(0, 8).map(x => ({ domain: x.domain, regionCode: x.regionCode, region: x.region, port: x.port })),
+            protocols: { ev, et, ex, disableNonTLS },
+            regions
+        }, null, 2), {
+            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+    }
+    
     const finalLinks = [];
     const workerDomain = url.hostname;
     const target = url.searchParams.get('target') || 'base64';
