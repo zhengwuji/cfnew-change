@@ -872,6 +872,55 @@ export default {
             }
 
             if (request.method === 'GET') {
+                // 处理 /{UUID}/trace 或 /{自定义路径}/trace：用于验证当前请求命中的 Cloudflare Colo/城市（比 IP 地理库更准确）
+                if (url.pathname.endsWith('/trace')) {
+                    const pathParts = url.pathname.split('/').filter(p => p);
+                    if (pathParts.length === 2 && pathParts[1] === 'trace') {
+                        const pathIdentifier = pathParts[0];
+                        let isValid = false;
+                        
+                        if (cp && cp.trim()) {
+                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                            isValid = (pathIdentifier === cleanCustomPath);
+                        } else {
+                            isValid = (pathIdentifier === envUKey);
+                        }
+                        
+                        if (!isValid) {
+                            return new Response(JSON.stringify({ error: '访问被拒绝', message: '路径验证失败' }), {
+                                status: 403,
+                                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                            });
+                        }
+                        
+                        const cf = request.cf || {};
+                        const trace = {
+                            timestamp: new Date().toISOString(),
+                            url: url.href,
+                            colo: cf.colo || '',
+                            country: cf.country || '',
+                            continent: cf.continent || '',
+                            city: cf.city || '',
+                            region: cf.region || '',
+                            regionCode: cf.regionCode || '',
+                            timezone: cf.timezone || '',
+                            asn: cf.asn || '',
+                            asOrganization: cf.asOrganization || '',
+                            httpProtocol: cf.httpProtocol || '',
+                            tlsVersion: cf.tlsVersion || '',
+                            cfRay: request.headers.get('cf-ray') || '',
+                            note: '这是 Cloudflare 入口接入点信息（colo/city），不等同于“节点别名国家”或第三方IP库定位。'
+                        };
+                        
+                        return new Response(JSON.stringify(trace, null, 2), {
+                            headers: {
+                                'Content-Type': 'application/json; charset=utf-8',
+                                'Cache-Control': 'no-store'
+                            }
+                        });
+                    }
+                }
+                
                 // 处理 /{UUID}/region 或 /{自定义路径}/region
                 if (url.pathname.endsWith('/region')) {
                     const pathParts = url.pathname.split('/').filter(p => p);
