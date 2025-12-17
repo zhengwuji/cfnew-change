@@ -733,6 +733,134 @@ export default {
                 });
             }
 
+            // 错误日志 API：/{UUID或自定义路径}/api/error-logs
+            if (url.pathname.includes('/api/error-logs')) {
+                const pathParts = url.pathname.split('/').filter(p => p);
+
+                const apiIndex = pathParts.indexOf('api');
+                if (apiIndex > 0) {
+                    const pathSegments = pathParts.slice(0, apiIndex);
+                    const pathIdentifier = pathSegments.join('/');
+
+                    let isValid = false;
+                    if (cp && cp.trim()) {
+
+                        const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                        isValid = (pathIdentifier === cleanCustomPath);
+                    } else {
+                        // 验证必须与envUKey完全匹配（支持大小写）
+                        isValid = (pathIdentifier === envUKey);
+                    }
+
+                    if (!isValid) {
+                        const resp = {
+                            error: '访问被拒绝',
+                            message: '路径验证失败，必须使用正确的密钥u'
+                        };
+                        logHTTPError(403, JSON.stringify(resp), 'ErrorLogsAPI', {
+                            url: url.pathname,
+                            method: request.method,
+                            user: envUKey || 'unknown',
+                            workerRegion: currentWorkerRegion || 'unknown'
+                        });
+                        return new Response(JSON.stringify(resp), {
+                            status: 403,
+                            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                        });
+                    }
+
+                    // 仅支持 GET 获取日志、POST 清空日志
+                    if (request.method === 'GET') {
+                        const searchParams = url.searchParams;
+                        const limit = parseInt(searchParams.get('limit') || '100', 10);
+                        const offset = parseInt(searchParams.get('offset') || '0', 10);
+                        const context = searchParams.get('context') || '';
+                        const message = searchParams.get('message') || '';
+                        const since = searchParams.get('since') || '';
+
+                        const options = {
+                            limit: isNaN(limit) ? 100 : Math.min(Math.max(limit, 1), 500),
+                            offset: isNaN(offset) ? 0 : Math.max(offset, 0)
+                        };
+
+                        if (context) options.context = context;
+                        if (message) options.message = message;
+                        if (since) options.since = since;
+
+                        const logs = getErrorLogs(options);
+                        return new Response(JSON.stringify({
+                            success: true,
+                            total: logs.length,
+                            logs
+                        }), {
+                            status: 200,
+                            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                        });
+                    } else if (request.method === 'POST') {
+                        // 支持通过 POST 清空错误日志：{"action":"clear"}
+                        try {
+                            const body = await request.json();
+                            if (body && body.action === 'clear') {
+                                clearErrorLogs();
+                                return new Response(JSON.stringify({
+                                    success: true,
+                                    message: '错误日志已清空'
+                                }), {
+                                    status: 200,
+                                    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                                });
+                            }
+                        } catch (e) {
+                            // 忽略解析错误，返回 400
+                        }
+
+                        const resp = {
+                            success: false,
+                            error: '无效的请求',
+                            message: '仅支持 GET 获取日志，或 POST {\"action\":\"clear\"} 清空日志'
+                        };
+                        logHTTPError(400, JSON.stringify(resp), 'ErrorLogsAPI', {
+                            url: url.pathname,
+                            method: request.method,
+                            user: envUKey || 'unknown',
+                            workerRegion: currentWorkerRegion || 'unknown'
+                        });
+                        return new Response(JSON.stringify(resp), {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                        });
+                    }
+
+                    const resp = {
+                        success: false,
+                        error: '方法不被允许',
+                        message: '仅支持 GET 和 POST'
+                    };
+                    logHTTPError(405, JSON.stringify(resp), 'ErrorLogsAPI', {
+                        url: url.pathname,
+                        method: request.method,
+                        user: envUKey || 'unknown',
+                        workerRegion: currentWorkerRegion || 'unknown'
+                    });
+                    return new Response(JSON.stringify(resp), {
+                        status: 405,
+                        headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                    });
+                }
+
+                const resp = { error: '无效的API路径' };
+                logHTTPError(404, JSON.stringify(resp), 'ErrorLogsAPI', {
+                    url: url.pathname,
+                    method: request.method,
+                    user: envUKey || 'unknown',
+                    workerRegion: currentWorkerRegion || 'unknown'
+                });
+                return new Response(JSON.stringify(resp), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                });
+            }
+
             // 优先处理WebSocket升级请求（必须在其他路由之前）
             const upgradeHeader = request.headers.get('Upgrade');
             console.log('[ENTRY-DEBUG] 请求到达 - method:', request.method, 'url:', request.url, 'Upgrade header:', upgradeHeader);
@@ -868,6 +996,580 @@ export default {
                                 headers: { 'Content-Type': 'application/json' }
                             });
                         }
+                    }
+                }
+
+                // 错误日志页面：/{UUID}/error-logs 或 /{自定义路径}/error-logs
+                if (url.pathname.endsWith('/error-logs')) {
+                    const pathParts = url.pathname.split('/').filter(p => p);
+
+                    if (pathParts.length === 2 && pathParts[1] === 'error-logs') {
+                        const pathIdentifier = pathParts[0];
+                        let isValid = false;
+
+                        if (cp && cp.trim()) {
+                            // 使用自定义路径
+                            const cleanCustomPath = cp.trim().startsWith('/') ? cp.trim().substring(1) : cp.trim();
+                            isValid = (pathIdentifier === cleanCustomPath);
+                        } else {
+                            // 验证必须与envUKey完全匹配（支持大小写）
+                            isValid = (pathIdentifier === envUKey);
+                        }
+
+                        if (!isValid) {
+                            return new Response(JSON.stringify({
+                                error: '访问被拒绝',
+                                message: '路径验证失败'
+                            }), {
+                                status: 403,
+                                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                            });
+                        }
+
+                        const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错误日志查看器</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.96) 0%, transparent 45%),
+                        radial-gradient(circle at 100% 100%, rgba(59,130,246,0.12) 0%, transparent 55%),
+                        linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+            padding: 24px 12px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: rgba(15,23,42,0.94);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+            border: 1px solid rgba(148,163,184,0.25);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #e5e7eb 0%, #60a5fa 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(34,197,94,0.08);
+            border: 1px solid rgba(34,197,94,0.35);
+            font-size: 0.75rem;
+            color: #bbf7d0;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.8rem; color: #9ca3af; }
+        input, select {
+            background: rgba(15,23,42,0.9);
+            border-radius: 8px;
+            border: 1px solid rgba(55,65,81,0.9);
+            padding: 6px 10px;
+            color: #e5e7eb;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        input:focus, select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.5);
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        button {
+            border-radius: 999px;
+            border: none;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+        }
+        button.primary {
+            background: linear-gradient(135deg,#3b82f6,#6366f1);
+            color: white;
+            box-shadow: 0 10px 30px rgba(37,99,235,0.55);
+        }
+        button.secondary {
+            background: rgba(15,23,42,0.9);
+            border: 1px solid rgba(148,163,184,0.4);
+            color: #e5e7eb;
+        }
+        button.danger {
+            background: linear-gradient(135deg,#ef4444,#f97316);
+            color: white;
+            box-shadow: 0 10px 30px rgba(239,68,68,0.55);
+        }
+        button:hover { transform: translateY(-1px); }
+        button:active { transform: translateY(0); box-shadow: none; }
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        .toggle input {
+            width: 32px;
+            height: 18px;
+            appearance: none;
+            background: rgba(31,41,55,0.9);
+            border-radius: 999px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid rgba(55,65,81,0.9);
+        }
+        .toggle input:checked {
+            background: linear-gradient(135deg,#22c55e,#16a34a);
+            border-color: transparent;
+        }
+        .toggle input::before {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            background: white;
+            transition: transform 0.15s ease;
+        }
+        .toggle input:checked::before {
+            transform: translateX(12px);
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .status-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(31,41,55,0.9);
+            border: 1px solid rgba(55,65,81,0.9);
+        }
+        .table-wrapper {
+            background: rgba(15,23,42,0.85);
+            border-radius: 12px;
+            border: 1px solid rgba(31,41,55,0.95);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        thead {
+            background: linear-gradient(135deg,#020617,#0b1120);
+        }
+        th, td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(31,41,55,0.9);
+            vertical-align: top;
+        }
+        th {
+            font-weight: 500;
+            color: #9ca3af;
+            white-space: nowrap;
+        }
+        tbody tr:nth-child(even) {
+            background: rgba(15,23,42,0.8);
+        }
+        tbody tr:nth-child(odd) {
+            background: rgba(15,23,42,0.6);
+        }
+        .log-message { color: #e5e7eb; }
+        .log-meta {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(55,65,81,0.9);
+        }
+        .badge-status.error {
+            color: #fecaca;
+            border-color: rgba(248,113,113,0.6);
+            background: rgba(127,29,29,0.6);
+        }
+        .badge-status.warn {
+            color: #fef3c7;
+            border-color: rgba(251,191,36,0.6);
+            background: rgba(120,53,15,0.6);
+        }
+        .badge-status.info {
+            color: #bfdbfe;
+            border-color: rgba(59,130,246,0.6);
+            background: rgba(30,64,175,0.6);
+        }
+        .empty {
+            padding: 26px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+        .footer {
+            margin-top: 12px;
+            font-size: 0.72rem;
+            color: #6b7280;
+            text-align: right;
+        }
+        .footer a {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 640px) {
+            .container { padding: 18px; }
+            .title { font-size: 1.3rem; }
+            th:nth-child(4), td:nth-child(4) { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="title">错误日志查看器</div>
+                <div class="subtitle">实时查看 Cloudflare Worker 中所有关键错误日志，包含 v2rayN / Trojan / XHTTP 等协议连接失败信息</div>
+            </div>
+            <div class="badge">
+                <span>●</span>
+                <span>在线监控中</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="field">
+                <label for="context">上下文筛选（context）</label>
+                <input id="context" placeholder="例如: handleSubscriptionRequest / handleWsRequest / forwardTCP">
+            </div>
+            <div class="field">
+                <label for="keyword">关键字筛选（message）</label>
+                <input id="keyword" placeholder="例如: connect ECONNREFUSED / 密钥验证失败">
+            </div>
+            <div class="field">
+                <label for="since">起始时间（since）</label>
+                <input id="since" placeholder="例如: 2025-01-01T00:00:00Z （可留空）">
+            </div>
+            <div class="field">
+                <label for="limit">每次加载条数（1-500）</label>
+                <input id="limit" type="number" min="1" max="500" value="200">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="primary" id="btn-refresh">
+                <span>⟳ 刷新日志</span>
+            </button>
+            <button class="secondary" id="btn-load-more">
+                <span>＋加载更多</span>
+            </button>
+            <button class="danger" id="btn-clear">
+                <span>🗑 清空当前实例日志</span>
+            </button>
+            <label class="toggle">
+                <input type="checkbox" id="auto-refresh" checked>
+                <span>每 5 秒自动刷新</span>
+            </label>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                <span class="status-pill" id="status-text">正在加载日志...</span>
+            </div>
+            <div>
+                <span id="status-count">0 条日志</span>
+                <span> · </span>
+                <span id="status-updated">上次更新: -</span>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>时间 (UTC)</th>
+                        <th>上下文</th>
+                        <th>状态 / 地区</th>
+                        <th>请求信息</th>
+                        <th>错误详情</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body">
+                    <tr><td colspan="5" class="empty">暂无错误日志，系统运行一切正常 🎉</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            当前日志存储于 Worker 内存中，仅本实例有效（重启后会清空）。<br>
+            建议在排查 v2rayN / Trojan / XHTTP 连接失败或订阅异常时打开此页面进行实时观察。
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const tbody = document.getElementById('log-body');
+            const statusText = document.getElementById('status-text');
+            const statusCount = document.getElementById('status-count');
+            const statusUpdated = document.getElementById('status-updated');
+            const btnRefresh = document.getElementById('btn-refresh');
+            const btnLoadMore = document.getElementById('btn-load-more');
+            const btnClear = document.getElementById('btn-clear');
+            const autoRefresh = document.getElementById('auto-refresh');
+            const contextInput = document.getElementById('context');
+            const keywordInput = document.getElementById('keyword');
+            const sinceInput = document.getElementById('since');
+            const limitInput = document.getElementById('limit');
+
+            let offset = 0;
+            let loading = false;
+            let lastTotal = 0;
+            let timer = null;
+
+            function getApiBase() {
+                const parts = window.location.pathname.split('/').filter(Boolean);
+                if (parts.length >= 2) {
+                    return '/' + parts[0] + '/api/error-logs';
+                }
+                // 兜底：当前路径去掉最后一段
+                return window.location.pathname.replace(/\\/error-logs\\/?$/, '') + '/api/error-logs';
+            }
+
+            function formatDate(str) {
+                if (!str) return '-';
+                try {
+                    const d = new Date(str);
+                    if (isNaN(d.getTime())) return str;
+                    return d.toISOString().replace('T',' ').replace('Z','');
+                } catch (e) {
+                    return str;
+                }
+            }
+
+            function escapeHtml(str) {
+                if (str == null) return '';
+                return String(str)
+                    .replace(/&/g,'&amp;')
+                    .replace(/</g,'&lt;')
+                    .replace(/>/g,'&gt;')
+                    .replace(/\"/g,'&quot;')
+                    .replace(/'/g,'&#39;');
+            }
+
+            function renderLogs(logs, append) {
+                if (!append) {
+                    tbody.innerHTML = '';
+                }
+                if (!logs || logs.length === 0) {
+                    if (!append) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无错误日志，系统运行一切正常 🎉</td></tr>';
+                    }
+                    return;
+                }
+
+                const rows = logs.map(log => {
+                    const status = log.statusCode || '';
+                    let statusClass = 'info';
+                    if (status >= 500) statusClass = 'error';
+                    else if (status >= 400) statusClass = 'warn';
+                    const statusText = status ? ('HTTP ' + status) : '运行时错误';
+                    const region = log.workerRegion || '-';
+                    const url = log.url || '-';
+                    const method = log.method || '';
+                    const user = log.user || '';
+                    const msg = log.message || '';
+                    const ctx = log.context || '';
+                    const stack = log.stack || '';
+
+                    return '<tr>' +
+                        '<td>' + escapeHtml(formatDate(log.timestamp)) + '</td>' +
+                        '<td><div class="log-meta">' + escapeHtml(ctx) + '</div></td>' +
+                        '<td>' +
+                            '<div class="badge-status ' + statusClass + '">' + escapeHtml(statusText) + '</div>' +
+                            '<div class="log-meta" style="margin-top:4px;">地区: ' + escapeHtml(region) + '</div>' +
+                        '</td>' +
+                        '<td>' +
+                            '<div class="log-meta">URL: ' + escapeHtml(url) + '</div>' +
+                            '<div class="log-meta">方法: ' + escapeHtml(method) + '</div>' +
+                            '<div class="log-meta">用户/密钥: ' + escapeHtml(user) + '</div>' +
+                        '</td>' +
+                        '<td>' +
+                            '<div class="log-message">' + escapeHtml(msg) + '</div>' +
+                            (stack ? '<pre class="log-meta" style="margin-top:4px; white-space:pre-wrap; max-height:160px; overflow:auto;">' + escapeHtml(stack) + '</pre>' : '') +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+
+                if (append) {
+                    tbody.insertAdjacentHTML('beforeend', rows);
+                } else {
+                    tbody.innerHTML = rows;
+                }
+            }
+
+            async function fetchLogs(append) {
+                if (loading) return;
+                loading = true;
+                statusText.textContent = '正在加载日志...';
+
+                const limit = Math.min(Math.max(parseInt(limitInput.value || '200', 10) || 200, 1), 500);
+                const params = new URLSearchParams();
+                params.set('limit', limit.toString());
+                params.set('offset', append ? offset.toString() : '0');
+                if (contextInput.value.trim()) params.set('context', contextInput.value.trim());
+                if (keywordInput.value.trim()) params.set('message', keywordInput.value.trim());
+                if (sinceInput.value.trim()) params.set('since', sinceInput.value.trim());
+
+                try {
+                    const res = await fetch(getApiBase() + '?' + params.toString(), {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) {
+                        statusText.textContent = '加载失败: HTTP ' + res.status;
+                        loading = false;
+                        return;
+                    }
+                    const data = await res.json();
+                    const logs = data.logs || [];
+                    if (!append) offset = 0;
+                    offset += logs.length;
+                    lastTotal = (append ? lastTotal + logs.length : logs.length);
+                    renderLogs(logs, append);
+                    statusCount.textContent = lastTotal + ' 条日志';
+                    statusText.textContent = logs.length ? '加载完成' : '暂无新日志';
+                    statusUpdated.textContent = '上次更新: ' + formatDate(new Date().toISOString());
+                } catch (e) {
+                    console.error('加载错误日志失败', e);
+                    statusText.textContent = '加载失败: ' + (e && e.message ? e.message : '未知错误');
+                } finally {
+                    loading = false;
+                }
+            }
+
+            async function clearLogs() {
+                if (!confirm('确定要清空当前实例内存中的错误日志吗？\\n此操作仅影响当前 Worker 实例，无法恢复。')) return;
+                try {
+                    const res = await fetch(getApiBase(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'clear' })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.success) {
+                        offset = 0;
+                        lastTotal = 0;
+                        renderLogs([], false);
+                        statusCount.textContent = '0 条日志';
+                        statusText.textContent = '日志已清空';
+                    } else {
+                        statusText.textContent = '清空失败: ' + (data && data.message ? data.message : '未知原因');
+                    }
+                } catch (e) {
+                    console.error('清空日志失败', e);
+                    statusText.textContent = '清空失败: ' + (e && e.message ? e.message : '未知错误');
+                }
+            }
+
+            function setupAutoRefresh() {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                if (autoRefresh.checked) {
+                    timer = setInterval(() => {
+                        fetchLogs(false);
+                    }, 5000);
+                }
+            }
+
+            btnRefresh.addEventListener('click', () => {
+                offset = 0;
+                lastTotal = 0;
+                fetchLogs(false);
+            });
+
+            btnLoadMore.addEventListener('click', () => {
+                fetchLogs(true);
+            });
+
+            btnClear.addEventListener('click', () => {
+                clearLogs();
+            });
+
+            autoRefresh.addEventListener('change', () => {
+                setupAutoRefresh();
+            });
+
+            // 初始加载
+            fetchLogs(false);
+            setupAutoRefresh();
+        })();
+    </script>
+</body>
+</html>`;
+
+                        return new Response(html, {
+                            status: 200,
+                            headers: {
+                                'Content-Type': 'text/html; charset=utf-8',
+                                'Cache-Control': 'no-store'
+                            }
+                        });
                     }
                 }
 
@@ -2297,6 +2999,13 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
                 connectStreams(socksSocket, ws, respHeader, null);
                 return;
             } catch (socksErr) {
+                // 记录 SOCKS5 连接失败日志，方便排查 v2rayN 等客户端连接失败问题
+                logError(socksErr, 'forwardTCP.retry.socks', {
+                    targetHost: host,
+                    targetPort: portNum,
+                    workerRegion: currentWorkerRegion || 'unknown',
+                    useSocks: true
+                });
                 let backupHost, backupPort;
                 if (fallbackAddress && fallbackAddress.trim() && fallbackPort) {
                     backupHost = fallbackAddress;
@@ -2313,6 +3022,15 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
                     fallbackSocket.closed.catch(() => { }).finally(() => closeSocketQuietly(ws));
                     connectStreams(fallbackSocket, ws, respHeader, null);
                 } catch (fallbackErr) {
+                    // 记录降级到备用节点仍然失败的情况
+                    logError(fallbackErr, 'forwardTCP.retry.fallback', {
+                        targetHost: host,
+                        targetPort: portNum,
+                        fallbackHost,
+                        fallbackPort,
+                        workerRegion: currentWorkerRegion || 'unknown',
+                        useSocks: false
+                    });
                     closeSocketQuietly(ws);
                 }
             }
@@ -2333,6 +3051,15 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
                 fallbackSocket.closed.catch(() => { }).finally(() => closeSocketQuietly(ws));
                 connectStreams(fallbackSocket, ws, respHeader, null);
             } catch (fallbackErr) {
+                // 记录直接降级连接失败日志
+                logError(fallbackErr, 'forwardTCP.retry.directFallback', {
+                    targetHost: host,
+                    targetPort: portNum,
+                    fallbackHost,
+                    fallbackPort,
+                    workerRegion: currentWorkerRegion || 'unknown',
+                    useSocks: isSocksEnabled
+                });
                 closeSocketQuietly(ws);
             }
         }
@@ -2343,6 +3070,13 @@ async function forwardTCP(addrType, host, portNum, rawData, ws, respHeader, remo
         remoteConnWrapper.socket = initialSocket;
         connectStreams(initialSocket, ws, respHeader, retryConnection);
     } catch (err) {
+        // 首次连接失败也记录日志（包括 v2rayN 等客户端直连失败场景）
+        logError(err, 'forwardTCP.initialConnect', {
+            targetHost: host,
+            targetPort: portNum,
+            workerRegion: currentWorkerRegion || 'unknown',
+            useSocks: isSocksEnabled
+        });
         retryConnection();
     }
 }
