@@ -1719,6 +1719,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
     const selectedProxyRegions = getConfigValue('proxyRegions', '');
     const selectedRegionsList = selectedProxyRegions ? selectedProxyRegions.split(',').map(r => r.trim()).filter(r => r) : [];
     
+    // #region agent log
+    console.log('[DEBUG] 订阅生成-获取选中区域:', {selectedProxyRegions, selectedRegionsList, kvConfig: JSON.stringify(kvConfig)});
+    // #endregion
+    
     if (currentWorkerRegion === 'CUSTOM') {
         const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
         await addNodesFromList(nativeList);
@@ -1753,6 +1757,10 @@ async function handleSubscriptionRequest(request, user, url = null) {
     
     // 如果用户选择了区域，为每个选中的区域生成ProxyIP节点
     if (selectedRegionsList.length > 0) {
+        // #region agent log
+        console.log('[DEBUG] 订阅生成-开始生成区域节点:', {selectedRegionsList, backupIPsCount: backupIPs.length});
+        // #endregion
+        
         const regionNameMap = {
             'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
             'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
@@ -1764,6 +1772,11 @@ async function handleSubscriptionRequest(request, user, url = null) {
         for (const region of selectedRegionsList) {
             // 查找对应区域的所有backupIP（包括CMLiussss.net和fxxk.dedyn.io的）
             const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
+            
+            // #region agent log
+            console.log('[DEBUG] 订阅生成-查找区域IP:', {region, regionIPsCount: regionIPs.length, regionIPs: regionIPs.map(ip => ({domain: ip.domain, region: ip.region, regionCode: ip.regionCode}))});
+            // #endregion
+            
             if (regionIPs.length > 0) {
                 const regionName = regionNameMap[region] || region;
                 
@@ -1773,28 +1786,51 @@ async function handleSubscriptionRequest(request, user, url = null) {
                 
                 // 优先添加CMLiussss.net的节点
                 if (cmliIPs.length > 0) {
+                    // #region agent log
+                    console.log('[DEBUG] 订阅生成-添加CMLiussss节点:', {region, regionName, cmliIPsCount: cmliIPs.length, cmliIPs: cmliIPs.map(ip => ip.domain)});
+                    // #endregion
                     for (const selectedIP of cmliIPs) {
                         const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
                         await addNodesFromList(backupList);
+                        // #region agent log
+                        console.log('[DEBUG] 订阅生成-已添加节点:', {region, regionName, domain: selectedIP.domain, isp: regionName + '-ProxyIP'});
+                        // #endregion
                     }
                 }
                 
                 // 然后添加fxxk.dedyn.io的节点（如果有）
                 if (fxxkIPs.length > 0) {
+                    // #region agent log
+                    console.log('[DEBUG] 订阅生成-添加fxxk节点:', {region, regionName, fxxkIPsCount: fxxkIPs.length, fxxkIPs: fxxkIPs.map(ip => ip.domain)});
+                    // #endregion
                     for (const selectedIP of fxxkIPs) {
                         const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
                         await addNodesFromList(backupList);
+                        // #region agent log
+                        console.log('[DEBUG] 订阅生成-已添加节点:', {region, regionName, domain: selectedIP.domain, isp: regionName + '-ProxyIP'});
+                        // #endregion
                     }
                 }
                 
                 // 如果没有找到匹配的，使用第一个可用的
                 if (cmliIPs.length === 0 && fxxkIPs.length === 0 && regionIPs.length > 0) {
+                    // #region agent log
+                    console.log('[DEBUG] 订阅生成-使用第一个可用IP:', {region, regionName, domain: regionIPs[0].domain});
+                    // #endregion
                     const selectedIP = regionIPs[0];
                     const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
                     await addNodesFromList(backupList);
                 }
+            } else {
+                // #region agent log
+                console.log('[DEBUG] 订阅生成-未找到区域IP:', {region, backupIPsSample: backupIPs.slice(0, 3).map(ip => ({domain: ip.domain, region: ip.region, regionCode: ip.regionCode}))});
+                // #endregion
             }
         }
+    } else {
+        // #region agent log
+        console.log('[DEBUG] 订阅生成-未选择任何区域:', {selectedProxyRegions, selectedRegionsList});
+        // #endregion
     }
 
     const hasCustomPreferred = customPreferredIPs.length > 0 || customPreferredDomains.length > 0;
@@ -3979,12 +4015,34 @@ async function handleSubscriptionPage(request, user = null) {
                     
                     // 恢复选中的区域
                     const proxyRegionSelect = document.getElementById('proxyRegionSelect');
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3980','message':'加载配置-开始恢复区域',data:{hasProxyRegionSelect:!!proxyRegionSelect,configProxyRegions:config.proxyRegions,configProxyRegionsType:typeof config.proxyRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
+                    
                     if (proxyRegionSelect && config.proxyRegions) {
                         const selectedRegions = config.proxyRegions.split(',').map(r => r.trim()).filter(r => r);
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3985','message':'加载配置-解析选中区域',data:{selectedRegions:selectedRegions,selectedRegionsLength:selectedRegions.length,rawConfigValue:config.proxyRegions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                        // #endregion
+                        
                         const options = proxyRegionSelect.options;
+                        const beforeSelected = Array.from(options).filter(o => o.selected).map(o => o.value);
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3990','message':'加载配置-应用前状态',data:{beforeSelected:beforeSelected,optionsCount:options.length,defaultSelected:Array.from(options).filter(o=>o.hasAttribute('selected')).map(o=>o.value)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                        // #endregion
+                        
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = selectedRegions.includes(options[i].value);
                         }
+                        
+                        const afterSelected = Array.from(options).filter(o => o.selected).map(o => o.value);
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:3995','message':'加载配置-应用后状态',data:{afterSelected:afterSelected,expectedSelected:selectedRegions,match:JSON.stringify(afterSelected.sort())===JSON.stringify(selectedRegions.sort())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                        // #endregion
                         // 更新显示 - 使用setTimeout确保DOM已更新
                         setTimeout(function() {
                             const selectedRegionsListEl = document.getElementById('selectedRegionsList');
@@ -4478,6 +4536,10 @@ async function handleSubscriptionPage(request, user = null) {
                         const proxyRegionSelect = document.getElementById('proxyRegionSelect');
                         const selectedRegions = proxyRegionSelect ? Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value).join(',') : '';
                         
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4406','message':'保存配置-获取选中区域',data:{selectedRegions:selectedRegions,selectedCount:proxyRegionSelect?proxyRegionSelect.selectedOptions.length:0,allOptions:proxyRegionSelect?Array.from(proxyRegionSelect.options).map(o=>({value:o.value,selected:o.selected})):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                        // #endregion
+                        
                         const configData = { ev: document.getElementById('ev').checked ? 'yes' : 'no', et: document.getElementById('et').checked ? 'yes' : 'no', ex: document.getElementById('ex').checked ? 'yes' : 'no', tp: document.getElementById('tp').value,
                             d: document.getElementById('customPath').value,
                             p: document.getElementById('customIP').value,
@@ -4487,6 +4549,10 @@ async function handleSubscriptionPage(request, user = null) {
                             homepage: document.getElementById('customHomepage').value,
                             proxyRegions: selectedRegions
                         };
+                        
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4418','message':'保存配置-准备发送的数据',data:{proxyRegions:configData.proxyRegions,configDataKeys:Object.keys(configData)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                        // #endregion
                         
                         // 确保至少选择一个协议
                         if (!document.getElementById('ev').checked && 
@@ -4580,6 +4646,10 @@ async function handleSubscriptionPage(request, user = null) {
                     if (!selectedRegionsList || !proxyRegionSelect) return;
                     
                     const selectedValues = Array.from(proxyRegionSelect.selectedOptions).map(opt => opt.value);
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/6eb09d0f-596e-4725-966a-3a0b06ef75ac',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'明文源吗:4556','message':'UI更新-获取选中值',data:{selectedValues:selectedValues,selectedCount:selectedValues.length,allOptionsSelected:Array.from(proxyRegionSelect.options).filter(o=>o.selected).map(o=>o.value)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+                    // #endregion
                     
                     if (selectedValues.length === 0) {
                         selectedRegionsList.innerHTML = '<span style="color: #999; font-style: italic;">未选择任何区域，订阅将使用默认节点</span>';
@@ -5933,10 +6003,16 @@ async function handleConfigAPI(request) {
             });
         }
 
-        return new Response(JSON.stringify({
+        const responseData = {
             ...kvConfig,
             kvEnabled: true
-        }), {
+        };
+        
+        // #region agent log
+        console.log('[DEBUG] API读取配置-返回数据:', {proxyRegions: responseData.proxyRegions, proxyRegionsType: typeof responseData.proxyRegions, allKeys: Object.keys(responseData)});
+        // #endregion
+        
+        return new Response(JSON.stringify(responseData), {
             headers: { 'Content-Type': 'application/json' }
         });
     } else if (request.method === 'POST') {
@@ -5953,6 +6029,10 @@ async function handleConfigAPI(request) {
 
         try {
             const newConfig = await request.json();
+            
+            // #region agent log
+            console.log('[DEBUG] API保存配置-接收数据:', {newConfig, proxyRegions: newConfig.proxyRegions, proxyRegionsType: typeof newConfig.proxyRegions});
+            // #endregion
 
             for (const [key, value] of Object.entries(newConfig)) {
                 if (value === '' || value === null || value === undefined) {
@@ -5961,8 +6041,16 @@ async function handleConfigAPI(request) {
                     kvConfig[key] = value;
                 }
             }
+            
+            // #region agent log
+            console.log('[DEBUG] API保存配置-更新后kvConfig:', {proxyRegions: kvConfig.proxyRegions, kvConfigKeys: Object.keys(kvConfig)});
+            // #endregion
 
             await saveKVConfig();
+            
+            // #region agent log
+            console.log('[DEBUG] API保存配置-保存完成:', {proxyRegions: kvConfig.proxyRegions});
+            // #endregion
 
             updateConfigVariables();
 
