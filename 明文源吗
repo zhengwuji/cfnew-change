@@ -1697,6 +1697,16 @@ function generateV2RayConfig(links) {
 
 async function handleSubscriptionRequest(request, user, url = null) {
     if (!url) url = new URL(request.url);
+    
+    // #region agent log - 函数入口
+    console.log('[DEBUG] handleSubscriptionRequest-入口:', {
+        user: user,
+        url: url.href,
+        pathname: url.pathname,
+        hasKVStore: !!kvStore,
+        kvConfigSize: kvConfig ? Object.keys(kvConfig).length : 0
+    });
+    // #endregion
 
     // 验证密钥：user必须与环境变量u完全匹配（支持大小写）
     if (!envUKey || user !== envUKey) {
