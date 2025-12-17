@@ -347,9 +347,25 @@ async function loadKVConfig() {
 
         if (configData) {
             kvConfig = JSON.parse(configData);
+            // #region agent log
+            console.log('[DEBUG] KV配置加载-成功:', {
+                proxyRegions: kvConfig.proxyRegions,
+                proxyRegionsType: typeof kvConfig.proxyRegions,
+                allKeys: Object.keys(kvConfig),
+                configStringLength: configData.length
+            });
+            // #endregion
+        } else {
+            kvConfig = {};
+            // #region agent log
+            console.log('[DEBUG] KV配置加载-空配置');
+            // #endregion
         }
     } catch (error) {
         kvConfig = {};
+        // #region agent log
+        console.log('[DEBUG] KV配置加载-错误:', {error: error.message});
+        // #endregion
     }
 }
 
