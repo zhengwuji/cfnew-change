@@ -4136,6 +4136,11 @@ async function handleSubscriptionPage(request, user = null) {
                         }, 100);
                     }
                     
+                    // 立即更新UI显示（不等待setTimeout）
+                    if (typeof window.updateSelectedRegionsDisplay === 'function') {
+                        window.updateSelectedRegionsDisplay();
+                    }
+                    
                     // 更新路径类型显示
                     updatePathTypeStatus(config.d);
                     
@@ -4744,7 +4749,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = true;
                         }
-                        updateSelectedRegionsDisplay();
+                        window.updateSelectedRegionsDisplay();
                         showStatus('✓ 已选中所有区域', 'success');
                     });
                 }
@@ -4755,7 +4760,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = false;
                         }
-                        updateSelectedRegionsDisplay();
+                        window.updateSelectedRegionsDisplay();
                         showStatus('✗ 已清空所有选择', 'info');
                     });
                 }
@@ -4767,7 +4772,7 @@ async function handleSubscriptionPage(request, user = null) {
                         for (let i = 0; i < options.length; i++) {
                             options[i].selected = asiaRegions.includes(options[i].value);
                         }
-                        updateSelectedRegionsDisplay();
+                        window.updateSelectedRegionsDisplay();
                         showStatus('🌏 已选中亚洲区域', 'success');
                     });
                 }
