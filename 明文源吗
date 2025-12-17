@@ -4762,7 +4762,8 @@ async function handleSubscriptionPage(request, user = null) {
                 }
                 
                 async function autoSaveProxyRegions(selectedRegionsStr) {
-                    if (window.__kvEnabled !== true) return;
+                    // kvEnabled=true 才明确可用；kvEnabled=undefined 时也尝试保存（用于页面初始阶段用户快速点击）
+                    if (window.__kvEnabled === false) return;
                     if (selectedRegionsStr === __autoSaveLast) return;
                     __autoSaveLast = selectedRegionsStr;
                     
