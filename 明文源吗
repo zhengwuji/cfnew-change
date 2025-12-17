@@ -1808,6 +1808,9 @@ async function handleSubscriptionRequest(request, user, url = null) {
     const finalLinks = [];
     const workerDomain = url.hostname;
     const target = url.searchParams.get('target') || 'base64';
+    const onlyProxyRegions = url.searchParams.get('onlyProxyRegions') === '1' || url.searchParams.get('mode') === 'proxyRegions';
+    const plain = url.searchParams.get('plain') === '1';
+    const dedup = url.searchParams.get('dedup') !== '0'; // 默认去重（每地区最多1个源）
 
     async function addNodesFromList(list) {
         if (ev) {
@@ -1819,6 +1822,76 @@ async function handleSubscriptionRequest(request, user, url = null) {
         if (ex) {
             finalLinks.push(...generateXhttpLinksFromSource(list, user, workerDomain));
         }
+    }
+    
+    // 仅输出“选中地区 ProxyIP 节点”（用于验证 v2rayN 是否能正确导入多个国家）
+    if (onlyProxyRegions) {
+        if (!kvConfig || Object.keys(kvConfig).length === 0) {
+            await loadKVConfig();
+        }
+        const selectedProxyRegions = getConfigValue('proxyRegions', '');
+        const selectedRegionsList = selectedProxyRegions ? selectedProxyRegions.split(',').map(r => r.trim()).filter(r => r) : [];
+        const regionNameMap = {
+            'GLOBAL': '全球优选', 'HK': '香港', 'SG': '新加坡', 'JP': '日本', 'KR': '韩国', 'IN': '印度',
+            'GB': '英国', 'FR': '法国', 'DE': '德国', 'NL': '荷兰', 'SE': '瑞典', 'FI': '芬兰',
+            'PL': '波兰', 'RU': '俄罗斯', 'CH': '瑞士', 'LV': '拉脱维亚',
+            'US': '美国', 'CA': '加拿大',
+            'Aliyun': '阿里云', 'Oracle': '甲骨文', 'DigitalOcean': '数码海', 'Vultr': 'Vultr'
+        };
+        
+        // #region agent log
+        console.log('[DEBUG] onlyProxyRegions-入口:', {selectedProxyRegions, selectedRegionsList, dedup, plain, ev, et, ex});
+        // #endregion
+        
+        const nodes = [];
+        for (const region of selectedRegionsList) {
+            const regionIPs = backupIPs.filter(ip => ip.regionCode === region || ip.region === region);
+            const cmliIPs = regionIPs.filter(ip => ip.domain.includes('CMLiussss.net') || ip.domain.includes('cmliussss.net'));
+            const fxxkIPs = regionIPs.filter(ip => ip.domain.includes('fxxk.dedyn.io'));
+            const regionName = regionNameMap[region] || region;
+            
+            if (regionIPs.length === 0) continue;
+            
+            const pick = [];
+            if (dedup) {
+                if (cmliIPs.length) pick.push({ src: 'CML', ip: cmliIPs[0] });
+                else if (fxxkIPs.length) pick.push({ src: 'FXXK', ip: fxxkIPs[0] });
+                else pick.push({ src: 'SRC', ip: regionIPs[0] });
+            } else {
+                cmliIPs.forEach(x => pick.push({ src: 'CML', ip: x }));
+                fxxkIPs.forEach(x => pick.push({ src: 'FXXK', ip: x }));
+                if (pick.length === 0) regionIPs.forEach(x => pick.push({ src: 'SRC', ip: x }));
+            }
+            
+            for (const p of pick) {
+                nodes.push({ ip: p.ip.domain, isp: `${regionName}-ProxyIP-${p.src}`, port: p.ip.port });
+            }
+        }
+        
+        // #region agent log
+        console.log('[DEBUG] onlyProxyRegions-将生成的节点数:', {count: nodes.length, nodes: nodes.map(n => ({ip:n.ip, isp:n.isp, port:n.port}))});
+        // #endregion
+        
+        if (nodes.length > 0) {
+            await addNodesFromList(nodes);
+        }
+        
+        if (finalLinks.length === 0) {
+            const errorRemark = "地区节点生成为空";
+            const proto = atob('dmxlc3M=');
+            const errorLink = `${proto}://00000000-0000-0000-0000-000000000000@127.0.0.1:80?encryption=none&security=none&type=ws&host=error.com&path=%2F#${encodeURIComponent(errorRemark)}`;
+            finalLinks.push(errorLink);
+        }
+        
+        if (plain) {
+            return new Response(finalLinks.join('\n'), {
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }
+            });
+        }
+        
+        return new Response(btoa(finalLinks.join('\n')), {
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }
+        });
     }
 
     // 确保KV配置已加载（如果之前没有加载）
@@ -1922,7 +1995,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
                     console.log('[DEBUG] 订阅生成-添加CMLiussss节点:', {region, regionName, cmliIPsCount: cmliIPs.length, cmliIPs: cmliIPs.map(ip => ip.domain)});
                     // #endregion
                     for (const selectedIP of cmliIPs) {
-                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
+                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP-CML', port: selectedIP.port }];
                         await addNodesFromList(backupList);
                         // #region agent log
                         console.log('[DEBUG] 订阅生成-已添加节点:', {region, regionName, domain: selectedIP.domain, isp: regionName + '-ProxyIP'});
@@ -1936,7 +2009,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
                     console.log('[DEBUG] 订阅生成-添加fxxk节点:', {region, regionName, fxxkIPsCount: fxxkIPs.length, fxxkIPs: fxxkIPs.map(ip => ip.domain)});
                     // #endregion
                     for (const selectedIP of fxxkIPs) {
-                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP', port: selectedIP.port }];
+                        const backupList = [{ ip: selectedIP.domain, isp: regionName + '-ProxyIP-FXXK', port: selectedIP.port }];
                         await addNodesFromList(backupList);
                         // #region agent log
                         console.log('[DEBUG] 订阅生成-已添加节点:', {region, regionName, domain: selectedIP.domain, isp: regionName + '-ProxyIP'});
@@ -6313,21 +6386,8 @@ async function handleConfigAPI(request) {
                 customPreferredIPs = [];
                 customPreferredDomains = [];
             } else {
-                backupIPs = [
-                    { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
-                    { domain: 'ProxyIP.SG.CMLiussss.net', region: 'SG', regionCode: 'SG', port: 443 },
-                    { domain: 'ProxyIP.JP.CMLiussss.net', region: 'JP', regionCode: 'JP', port: 443 },
-                    { domain: 'ProxyIP.KR.CMLiussss.net', region: 'KR', regionCode: 'KR', port: 443 },
-                    { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
-                    { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
-                    { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
-                    { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
-                    { domain: 'ProxyIP.GB.CMLiussss.net', region: 'GB', regionCode: 'GB', port: 443 },
-                    { domain: 'ProxyIP.Oracle.cmliussss.net', region: 'Oracle', regionCode: 'Oracle', port: 443 },
-                    { domain: 'ProxyIP.DigitalOcean.CMLiussss.net', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443 },
-                    { domain: 'ProxyIP.Vultr.CMLiussss.net', region: 'Vultr', regionCode: 'Vultr', port: 443 },
-                    { domain: 'ProxyIP.Multacom.CMLiussss.net', region: 'Multacom', regionCode: 'Multacom', port: 443 }
-                ];
+                // 注意：不要在保存配置时覆盖全局 backupIPs，否则不同请求/实例会出现地区缺失（例如 HK 消失）。
+                // backupIPs 作为“地区 ProxyIP 预设源”应保持全量静态列表（文件顶部定义）。
                 directDomains.length = 0;
                 directDomains.push(
                     { name: "cloudflare.182682.xyz", domain: "cloudflare.182682.xyz" },
