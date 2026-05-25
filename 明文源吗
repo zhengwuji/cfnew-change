@@ -5998,7 +5998,7 @@ async function fetchAndParseNewIPs() {
                     });
                 }
             }
-            return results;
+            return results.slice(0, 100);
         }
 
         const response = await fetch(url);
@@ -6020,7 +6020,7 @@ async function fetchAndParseNewIPs() {
                 });
             }
         }
-        return results;
+        return results.slice(0, 100);
     } catch (error) {
         return [];
     }
