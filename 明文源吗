@@ -6006,6 +6006,20 @@ async function fetchAndParseNewIPs() {
                     });
                 }
             }
+            
+            // 智能根据中国大陆直连天梯榜对IP进行权重排序，优先提取HK、SG、JP、US等大陆三网极佳链路IP
+            results.sort((a, b) => {
+                const nameA = a.name.toUpperCase();
+                const nameB = b.name.toUpperCase();
+                const golden = ['HK', 'SG', 'JP', 'US', 'KR', 'TW'];
+                const idxA = golden.findIndex(r => nameA.includes(r));
+                const idxB = golden.findIndex(r => nameB.includes(r));
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return 0;
+            });
+            
             return results.slice(0, 100);
         }
 
@@ -6028,6 +6042,20 @@ async function fetchAndParseNewIPs() {
                 });
             }
         }
+        
+        // 智能根据中国大陆直连天梯榜对IP进行权重排序，优先提取HK、SG、JP、US等大陆三网极佳链路IP
+        results.sort((a, b) => {
+            const nameA = a.name.toUpperCase();
+            const nameB = b.name.toUpperCase();
+            const golden = ['HK', 'SG', 'JP', 'US', 'KR', 'TW'];
+            const idxA = golden.findIndex(r => nameA.includes(r));
+            const idxB = golden.findIndex(r => nameB.includes(r));
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return 0;
+        });
+        
         return results.slice(0, 100);
     } catch (error) {
         return [];
