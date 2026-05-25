@@ -4531,7 +4531,7 @@ async function handleSubscriptionPage(request, user = null) {
             // 检查错误日志数量
             async function checkErrorLogsCount() {
                 try {
-                    const response = await fetch('/api/error-logs?limit=1');
+                    const response = await fetch(window.location.pathname.replace(/\/$/, '') + '/api/error-logs?limit=1');
                     const errorLogsDot = document.getElementById('errorLogsDot');
                     if (response.ok) {
                         const data = await response.json();
@@ -4582,7 +4582,7 @@ async function handleSubscriptionPage(request, user = null) {
                         btn.textContent = '下载中...';
                     }
                     
-                    const response = await fetch('/api/error-logs?limit=1000');
+                    const response = await fetch(window.location.pathname.replace(/\/$/, '') + '/api/error-logs?limit=1000');
                     if (!response.ok) {
                         throw new Error('获取日志失败: ' + response.status);
                     }
