@@ -56,20 +56,7 @@ const regionMapping = {
 let backupIPs = [
     { domain: 'proxyip.aliyun.co', region: 'CN', regionCode: 'CN', port: 443 },
     { domain: 'proxyip.cmliussss.net', region: 'US', regionCode: 'US', port: 443 },
-    { domain: 'proxyip.fxxk.dedyn.io', region: 'US', regionCode: 'US', port: 443 },
-    { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
-    { domain: 'ProxyIP.SG.CMLiussss.net', region: 'SG', regionCode: 'SG', port: 443 },
-    { domain: 'ProxyIP.JP.CMLiussss.net', region: 'JP', regionCode: 'JP', port: 443 },
-    { domain: 'ProxyIP.KR.CMLiussss.net', region: 'KR', regionCode: 'KR', port: 443 },
-    { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
-    { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
-    { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
-    { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
-    { domain: 'ProxyIP.GB.CMLiussss.net', region: 'GB', regionCode: 'GB', port: 443 },
-    { domain: 'ProxyIP.Oracle.cmliussss.net', region: 'Oracle', regionCode: 'Oracle', port: 443 },
-    { domain: 'ProxyIP.DigitalOcean.CMLiussss.net', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443 },
-    { domain: 'ProxyIP.Vultr.CMLiussss.net', region: 'Vultr', regionCode: 'Vultr', port: 443 },
-    { domain: 'ProxyIP.Multacom.CMLiussss.net', region: 'Multacom', regionCode: 'Multacom', port: 443 }
+    { domain: 'proxyip.fxxk.dedyn.io', region: 'US', regionCode: 'US', port: 443 }
 ];
 
 const directDomains = [];
@@ -642,11 +629,11 @@ export default {
                 ev = true;
             }
 
-            piu = getConfigValue('yxURL', env.yxURL || env.YXURL) || 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+            piu = getConfigValue('yxURL', env.yxURL || env.YXURL) || 'https://zip.cm.edu.kg/all.txt';
 
             cp = getConfigValue('d', env.d || env.D) || '';
 
-            const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+            const defaultURL = 'https://zip.cm.edu.kg/all.txt';
             if (piu !== defaultURL) {
                 directDomains.length = 0;
                 customPreferredIPs = [];
@@ -2373,7 +2360,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
         }
 
         if (epi) {
-            const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+            const defaultURL = 'https://zip.cm.edu.kg/all.txt';
             if (piu === defaultURL) {
                 try {
                     const dynamicIPList = await fetchDynamicIPs();
@@ -3701,7 +3688,7 @@ async function handleSubscriptionPage(request, user = null) {
                         </div>
                         <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 8px; color: #22c55e; font-weight: 600; font-size: 0.875rem;">${t.preferredIPsURL}</label>
-                                <input type="text" id="yxURL" placeholder="默认: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
+                                <input type="text" id="yxURL" placeholder="默认: https://zip.cm.edu.kg/all.txt" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #e5e7eb; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; border-radius: 6px;">
                                 <small style="color: #666; font-size: 0.8125rem; display: block; margin-top: 6px;">自定义优选IP列表来源URL，留空则使用默认地址</small>
                         </div>
                         
@@ -5992,7 +5979,7 @@ function formatIdentifier(arr, offset = 0) {
 }
 
 async function fetchAndParseNewIPs() {
-    const url = piu || "https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt";
+    const url = piu || "https://zip.cm.edu.kg/all.txt";
     try {
         const urls = url.includes(',') ? url.split(',').map(u => u.trim()).filter(u => u) : [url];
         const apiResults = await fetchPreferredAPI(urls, '443', 5000);
@@ -6191,8 +6178,8 @@ async function handleConfigAPI(request) {
                 updateCustomPreferredFromYx();
             }
 
-            const newPreferredIPsURL = getConfigValue('yxURL', '') || 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
-            const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+            const newPreferredIPsURL = getConfigValue('yxURL', '') || 'https://zip.cm.edu.kg/all.txt';
+            const defaultURL = 'https://zip.cm.edu.kg/all.txt';
             if (newPreferredIPsURL !== defaultURL) {
                 directDomains.length = 0;
                 customPreferredIPs = [];
@@ -6532,7 +6519,7 @@ function updateConfigVariables() {
 
     cp = getConfigValue('d', '') || '';
 
-    piu = getConfigValue('yxURL', '') || 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+    piu = getConfigValue('yxURL', '') || 'https://zip.cm.edu.kg/all.txt';
 
     const envFallback = getConfigValue('p', '');
     if (envFallback) {
@@ -6571,7 +6558,7 @@ function updateConfigVariables() {
         disablePreferred = false;
     }
 
-    const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
+    const defaultURL = 'https://zip.cm.edu.kg/all.txt';
     if (piu !== defaultURL) {
         directDomains.length = 0;
         customPreferredIPs = [];
