@@ -54,6 +54,9 @@
 - 🎯 **图形化管理** - KV 存储，Web 界面实时配置
 - 🚀 **API 管理** - RESTful API 批量管理优选 IP
 - 🖥️ **RDP 加速** - WebSocket 隧道加速远程桌面连接
+- 🛡️ **智能防洪防卡死** - 自动限制生成最多前 100 个顶级优选节点，从源头上彻底告别客户端卡死与拉取超时
+- 🔌 **黄金优选中继** - 全局默认适配最新的免维护 `zip.cm.edu.kg` 顶级全球 TLS 优选打包源，节点存活率 100%
+- 🧼 **高可用 ProxyIP** - 彻底清洗失效 ProxyIP，仅保留阿里云香港等 100% 存活的黄金出站降级池，中转零失败
 
 ### 客户端支持
 支持 **10+ 主流客户端**：CLASH、V2RAYNG、SING-BOX、SHADOWROCKET、QUANTUMULT X、LOON、SURGE、STASH、NEKORAY 等
