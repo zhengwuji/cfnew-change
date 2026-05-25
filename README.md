@@ -10,6 +10,24 @@
 
 </div>
 
+> [!WARNING]
+> ### ⚠️ 重要：部署后请将兼容日期设置为 `2026-01-20`
+> 
+> 如果未正确设置兼容日期，可能会导致部分高级协议及路由匹配解析抛出异常！请在部署后务必立刻进行以下配置：
+> 
+> #### 📁 Pages 部署：
+> 1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+> 2. 进入 **Workers 和 Pages** $\rightarrow$ 选择你的 **Pages 项目**
+> 3. 点击 **设置** $\rightarrow$ **运行时**
+> 4. 找到 **兼容性日期**，选择 **`2026-01-20`**，点击 **保存**
+> 5. 返回 **部署** $\rightarrow$ **创建部署** $\rightarrow$ **上传文件**
+> 
+> #### ⚙️ Worker 部署：
+> 1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)
+> 2. 进入 **Workers 和 Pages** $\rightarrow$ 选择你的 **Worker**
+> 3. 点击 **设置** $\rightarrow$ **运行时**
+> 4. 找到 **兼容性日期**，选择 **`2026-01-20`**，点击 **保存**
+
 ---
 
 ## 📑 目录
