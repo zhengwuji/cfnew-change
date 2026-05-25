@@ -7302,7 +7302,11 @@ async function handleErrorLogsPage(request, url) {
         let allLogs = [];
         async function loadLogs() {
             try {
-                const response = await fetch('/api/error-logs');
+                let basePath = window.location.pathname.replace(/\/error-logs\/?$/, '');
+                if (basePath.endsWith('/')) {
+                    basePath = basePath.slice(0, -1);
+                }
+                const response = await fetch(basePath + '/api/error-logs');
                 const data = await response.json();
                 allLogs = data.logs || [];
                 updateStats();
@@ -7398,7 +7402,15 @@ async function handleErrorLogsPage(request, url) {
         async function clearLogs() {
             if (!confirm('确定要清空所有错误日志吗？此操作不可恢复！')) return;
             try {
-                const response = await fetch('/api/error-logs', { method: 'DELETE' });
+                let basePath = window.location.pathname.replace(/\/error-logs\/?$/, '');
+                if (basePath.endsWith('/')) {
+                    basePath = basePath.slice(0, -1);
+                }
+                const response = await fetch(basePath + '/api/error-logs', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear' })
+                });
                 if (response.ok) { alert('日志已清空'); loadLogs(); } else { alert('清空失败'); }
             } catch (error) { alert('清空失败: ' + error.message); }
         }
